@@ -28,6 +28,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // SAFETY TIMEOUT: Force loading false after 5 seconds
+    const safetyTimer = setTimeout(() => {
+      if (loading) {
+        console.warn("Auth loading timed out. Forcing completion.");
+        setLoading(false);
+      }
+    }, 5000);
+
     // Helper to fetch role safely
     const fetchRole = async (userId: string) => {
       try {
@@ -53,31 +61,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        let userRole = null;
-        if (session?.user) {
-          userRole = await fetchRole(session.user.id);
-        }
-        setSession(session);
-        setUser(session?.user ?? null);
-        setRole(userRole);
-        setLoading(false);
-      }
-    );
+    const runAuthLogic = async () => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          let userRole = null;
+          if (session?.user) {
+            userRole = await fetchRole(session.user.id);
+            // CACHE ROLE
+            if (userRole) localStorage.setItem('user_role', userRole);
+            else localStorage.removeItem('user_role');
+          } else {
+            localStorage.removeItem('user_role');
+          }
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      let userRole = null;
+          setSession(session);
+          setUser(session?.user ?? null);
+          setRole(userRole);
+          setLoading(false);
+        }
+      );
+
+      // Check existing session
+      const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
+        let userRole = null;
+        // Optimistic check is already in state, but let's refresh it or fetch if missing
         userRole = await fetchRole(session.user.id);
+        if (userRole) localStorage.setItem('user_role', userRole);
+
+        // Update state with fresh role
+        setRole(userRole);
       }
       setSession(session);
       setUser(session?.user ?? null);
-      setRole(userRole);
       setLoading(false);
-    });
+      return subscription;
+    };
 
-    return () => subscription.unsubscribe();
+    const subPromise = runAuthLogic();
+
+    return () => {
+      clearTimeout(safetyTimer);
+      subPromise.then(sub => sub.unsubscribe());
+    };
   }, []);
 
   const signUp = async (email: string, password: string, fullName?: string, phone?: string) => {
