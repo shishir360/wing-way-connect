@@ -151,25 +151,44 @@ export default function AdminUsers() {
     }
   };
 
-  const updateDesignatedStatus = async (status: string) => {
-    if (!selectedAgentRole) return;
-    const { error } = await supabase
-      .from('user_roles')
-      .update({ designated_status: status === "none" ? null : status })
-      .eq('id', selectedAgentRole.id);
+  /* MAKE AGENT functionality */
+  const handleMakeAgent = async () => {
+    if (!selectedUser) return;
 
-    if (error) {
-      toast({ title: "Failed", description: error.message, variant: "destructive" });
+    // 1. Update Profile Role
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ role: 'agent' })
+      .eq('id', selectedUser.id);
+
+    if (profileError) {
+      toast({ title: "Failed to update profile", description: profileError.message, variant: "destructive" });
+      return;
+    }
+
+    // 2. Create User Role Entry if not exists
+    const { error: roleError } = await supabase
+      .from('user_roles')
+      .insert({
+        user_id: selectedUser.id,
+        role: 'agent',
+        is_approved: true // Auto-approve if admin makes them agent
+      });
+
+    if (roleError && !roleError.message.includes('duplicate')) {
+      toast({ title: "Failed to create agent role", description: roleError.message, variant: "destructive" });
     } else {
-      toast({ title: "Job Assigned ✅", description: "Agent scanner will now auto-select this status." });
-      setSelectedAgentRole({ ...selectedAgentRole, designated_status: status === "none" ? null : status });
-      fetchAgentRequests(); // Refresh list
+      toast({ title: "User Promoted to Agent 🎉", description: "They have been moved to the Agents tab." });
+      setIsDetailsOpen(false);
+      refetch(); // Reload profiles
+      fetchAgentRequests(); // Reload agents
+      setTab("agents"); // Switch to agents tab
     }
   };
 
   const filtered = profiles.filter(p => {
-    // Exclude admins from the user list if needed, or keep for full visibility
-    if (p.role === 'admin' || p.role === 'super_admin') return false;
+    // Exclude admins AND AGENTS from the user list
+    if (p.role === 'admin' || p.role === 'super_admin' || p.role === 'agent') return false;
 
     // Explicitly hide the main admin (handling typos like gmai.com vs gmail.com)
     const emailLower = (p.email || '').toLowerCase();
@@ -447,7 +466,17 @@ export default function AdminUsers() {
 
                 <div className="pt-4 mt-4 border-t">
                   <h4 className="text-sm font-medium mb-3">Account Actions</h4>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2">
+                    {!selectedUser.role?.includes('Agent') && (
+                      <Button
+                        variant="secondary"
+                        className="w-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20"
+                        onClick={handleMakeAgent}
+                      >
+                        <ShieldCheck className="h-4 w-4 mr-2" /> Promote to Agent
+                      </Button>
+                    )}
+
                     <Button
                       variant={selectedUser.is_active !== false ? "destructive" : "default"}
                       className="w-full"

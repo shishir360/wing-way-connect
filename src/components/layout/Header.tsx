@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Phone, Plane, ChevronRight, ArrowRight, User, LogIn } from "lucide-react";
+import { Menu, X, Phone, Plane, ChevronRight, ArrowRight, User, LogIn, LayoutDashboard, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,7 +20,7 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -148,9 +148,14 @@ export default function Header() {
           <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:gap-x-3">
             {user ? (
               <Button asChild variant="outline" size="sm" className="rounded-xl">
-                <Link to="/dashboard" className="flex items-center gap-1.5">
-                  <User className="h-4 w-4" />
-                  Dashboard
+                <Link
+                  to={role === 'admin' ? '/admin' : role === 'agent' ? '/agent' : '/dashboard'}
+                  className="flex items-center gap-1.5"
+                >
+                  {role === 'admin' ? <LayoutDashboard className="h-4 w-4" /> :
+                    role === 'agent' ? <ShieldCheck className="h-4 w-4" /> :
+                      <User className="h-4 w-4" />}
+                  {role === 'admin' ? 'Admin Panel' : role === 'agent' ? 'Agent Panel' : 'Dashboard'}
                 </Link>
               </Button>
             ) : (
