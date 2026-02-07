@@ -21,15 +21,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // Helper to fetch role safely
+    const fetchRole = async (userId: string) => {
+      try {
+        // 1. Try user_roles (handles multiple roles)
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId);
+
+        if (roles && roles.length > 0) {
+          // Prioritize admin/agent roles
+          if (roles.some(r => r.role === 'admin' || r.role === 'super_admin')) return 'admin';
+          if (roles.some(r => r.role === 'agent')) return 'agent';
+          return roles[0].role;
+        }
+
+        // 2. Fallback to profiles
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', userId).single();
+        return profile?.role || null;
+      } catch (err) {
+        console.error("Error fetching role:", err);
+        return null;
+      }
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         let userRole = null;
         if (session?.user) {
-          const { data } = await supabase.from('user_roles').select('role').eq('user_id', session.user.id).single();
-          userRole = data?.role || null;
+          userRole = await fetchRole(session.user.id);
         }
-
         setSession(session);
         setUser(session?.user ?? null);
         setRole(userRole);
@@ -37,14 +59,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       let userRole = null;
       if (session?.user) {
-        const { data } = await supabase.from('user_roles').select('role').eq('user_id', session.user.id).single();
-        userRole = data?.role || null;
+        userRole = await fetchRole(session.user.id);
       }
-
       setSession(session);
       setUser(session?.user ?? null);
       setRole(userRole);
