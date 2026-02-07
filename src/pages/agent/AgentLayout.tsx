@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const agentNav = [
-  { name: "ড্যাশবোর্ড", href: "/agent", icon: LayoutDashboard },
-  { name: "শিপমেন্ট", href: "/agent/shipments", icon: Package },
-  { name: "QR স্ক্যান", href: "/agent/scan", icon: ScanLine },
+  { name: "Dashboard", href: "/agent", icon: LayoutDashboard },
+  { name: "Shipments", href: "/agent/shipments", icon: Package },
+  { name: "QR Scan", href: "/agent/scan", icon: ScanLine },
 ];
 
 export default function AgentLayout() {
@@ -47,7 +47,7 @@ export default function AgentLayout() {
             </div>
             <div>
               <span className="text-lg font-bold text-primary font-display">WACC</span>
-              <p className="text-[10px] text-muted-foreground">এজেন্ট প্যানেল</p>
+              <p className="text-[10px] text-muted-foreground">Agent Panel</p>
             </div>
           </Link>
         </div>
@@ -64,10 +64,10 @@ export default function AgentLayout() {
         </nav>
         <div className="p-4 border-t border-border space-y-2">
           <Button variant="ghost" size="sm" className="w-full justify-start" asChild>
-            <Link to="/"><ArrowLeft className="h-4 w-4 mr-2" />হোমে ফিরুন</Link>
+            <Link to="/"><ArrowLeft className="h-4 w-4 mr-2" />Back to Home</Link>
           </Button>
           <Button variant="ghost" size="sm" className="w-full justify-start text-destructive" onClick={handleSignOut}>
-            <LogOut className="h-4 w-4 mr-2" />লগআউট
+            <LogOut className="h-4 w-4 mr-2" />Logout
           </Button>
         </div>
       </aside>
@@ -78,7 +78,7 @@ export default function AgentLayout() {
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <Truck className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="font-bold text-primary font-display">এজেন্ট</span>
+            <span className="font-bold text-primary font-display">Agent</span>
           </Link>
           <Button variant="ghost" size="icon" onClick={handleSignOut}><LogOut className="h-4 w-4" /></Button>
         </header>

@@ -96,6 +96,7 @@ export function useAdminBookings() {
 export function useAdminProfiles() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
   const fetchAll = async () => {
@@ -108,8 +109,9 @@ export function useAdminProfiles() {
         .order('created_at', { ascending: false });
       if (error) throw error;
       setProfiles((data || []) as Profile[]);
-    } catch (e) {
+    } catch (e: any) {
       console.error('Admin profiles error:', e);
+      setError(e.message || "Failed to fetch profiles");
     } finally {
       setLoading(false);
     }
@@ -119,5 +121,5 @@ export function useAdminProfiles() {
     if (user) fetchAll();
   }, [user]);
 
-  return { profiles, loading, refetch: fetchAll };
+  return { profiles, loading, error, refetch: fetchAll };
 }

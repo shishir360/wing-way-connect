@@ -69,6 +69,16 @@ export default function AdminAuth() {
             if (data) {
               toast({ title: "Welcome, Admin! 🛡️", description: "Redirecting to admin panel" });
               navigate("/admin");
+            } else if (loggedUser.email === ADMIN_EMAIL) {
+              // Auto-assign admin role if missing for the hardcoded admin email
+              const { error: roleError } = await supabase.from('user_roles').insert({ user_id: loggedUser.id, role: 'admin' as any });
+              if (roleError) {
+                console.error("Failed to assign role:", roleError);
+                toast({ title: "Role Assignment Failed", description: "Could not assign admin role automatically.", variant: "destructive" });
+              } else {
+                toast({ title: "Welcome, Admin! 🛡️", description: "Admin role assigned. Redirecting..." });
+                navigate("/admin");
+              }
             } else {
               toast({ title: "Not an admin", description: "This account doesn't have admin privileges", variant: "destructive" });
               await supabase.auth.signOut();
@@ -76,16 +86,23 @@ export default function AdminAuth() {
           }
         }
       } else {
-        const { error } = await signUp(email, password, fullName);
+        const { data, error } = await signUp(email, password, fullName);
         if (error) {
           toast({ title: "Registration failed", description: error.message.includes("User already registered") ? "Account already exists. Please login." : error.message, variant: "destructive" });
         } else {
           // Assign admin role
-          const { data: { user: newUser } } = await supabase.auth.getUser();
-          if (newUser) {
-            await supabase.from('user_roles').insert({ user_id: newUser.id, role: 'admin' as any });
+          if (data?.user) {
+            const { error: roleError } = await supabase.from('user_roles').insert({ user_id: data.user.id, role: 'admin' as any });
+
+            if (data.session) {
+              toast({ title: "Admin registered! 🎉", description: "Welcome to the admin panel." });
+              navigate("/admin");
+            } else {
+              // User requested to remove verification step.
+              toast({ title: "Admin registered!", description: "Account created. Please login." });
+              setIsLogin(true);
+            }
           }
-          toast({ title: "Admin registered! 🎉", description: "Please check your email to verify, then login." });
         }
       }
     } catch {
@@ -124,17 +141,15 @@ export default function AdminAuth() {
           <div className="flex bg-muted rounded-xl p-1 mb-6">
             <button
               onClick={() => setIsLogin(true)}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                isLogin ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-              }`}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${isLogin ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                }`}
             >
               Login
             </button>
             <button
               onClick={() => setIsLogin(false)}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                !isLogin ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-              }`}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${!isLogin ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                }`}
             >
               Register
             </button>

@@ -3,12 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SmartPhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plane, ArrowRight, CalendarIcon, Users, Briefcase, Clock, CheckCircle, Loader2 } from "lucide-react";
+import { Plane, ArrowRight, CalendarIcon, Users, Briefcase, Clock, CheckCircle, Loader2, Info, Star, ShieldCheck, Zap } from "lucide-react";
 import { cities, mockFlights } from "@/data/mockData";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -52,7 +53,7 @@ export default function AirTicket() {
       if (pendingBooking && user) {
         const bookingData = JSON.parse(pendingBooking);
         localStorage.removeItem(PENDING_FLIGHT_KEY);
-        
+
         // Restore state
         setTripType(bookingData.tripType);
         setFromCity(bookingData.fromCity);
@@ -62,19 +63,19 @@ export default function AirTicket() {
         setAdults(bookingData.adults);
         setChildren(bookingData.children);
         setFlightClass(bookingData.flightClass);
-        
+
         // Set selected flight and auto-book
         const flight = mockFlights.find(f => f.id === bookingData.selectedFlightId);
         if (flight) {
           setSearchResults(mockFlights);
           setSelectedFlight(flight);
-          
+
           // Auto-submit after restoring data
           await submitFlightBooking(flight, bookingData);
         }
       }
     };
-    
+
     processPendingBooking();
   }, [user]);
 
@@ -92,18 +93,18 @@ export default function AirTicket() {
     }
   ) => {
     if (!user) return;
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // Generate booking reference
       const { data: refData, error: refError } = await supabase
         .rpc('generate_booking_ref');
-      
+
       if (refError) throw refError;
-      
+
       const ref = refData || `WC-FL-${Math.floor(10000 + Math.random() * 90000)}`;
-      
+
       // Insert flight booking to database
       const { error: insertError } = await supabase
         .from('flight_bookings')
@@ -131,12 +132,12 @@ export default function AirTicket() {
           status: 'confirmed',
           pnr: `PNR${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
         });
-      
+
       if (insertError) throw insertError;
-      
+
       setBookingRef(ref);
       setBookingConfirmed(true);
-      
+
       toast({
         title: "Flight Booking Successful! 🎉",
         description: `Your Booking Reference: ${ref}`,
@@ -187,12 +188,12 @@ export default function AirTicket() {
         selectedFlightId: selectedFlight.id,
       };
       localStorage.setItem(PENDING_FLIGHT_KEY, JSON.stringify(pendingBooking));
-      
+
       toast({
         title: "Login Required",
         description: "Please login to complete your booking. Your booking will be auto-confirmed after login.",
       });
-      
+
       navigate("/auth");
       return;
     }
@@ -316,7 +317,7 @@ export default function AirTicket() {
           animate={{ rotate: [0, 360] }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
         />
-        
+
         <div className="container-wacc relative">
           <div className="flex items-center gap-2 text-primary-foreground/70 text-sm mb-4">
             <Link to="/" className="hover:text-primary-foreground">Home</Link>
@@ -339,10 +340,10 @@ export default function AirTicket() {
           animate={{ y: [0, -10, 0] }}
           transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
         />
-        
+
         <div className="container-wacc">
           {/* Search Form */}
-          <div className="bg-card rounded-xl border border-border p-6 mb-8 relative overflow-hidden">
+          <div className="bg-card rounded-xl border border-border p-6 mb-8 relative overflow-hidden shadow-lg">
             <motion.img
               src={boardingPass3D}
               alt="Boarding Pass"
@@ -350,9 +351,9 @@ export default function AirTicket() {
               animate={{ rotate: [0, 5, 0] }}
               transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
             />
-            
+
             <h2 className="text-xl font-semibold mb-6 relative">Search & Book Your Flight</h2>
-            
+
             {/* Trip Type */}
             <RadioGroup value={tripType} onValueChange={setTripType} className="flex gap-6 mb-6 relative">
               <div className="flex items-center space-x-2">
@@ -458,58 +459,119 @@ export default function AirTicket() {
             </Button>
           </div>
 
-          {/* Search Results */}
+          {/* Search Results - REDESIGNED */}
           {searchResults && !selectedFlight && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Available Flights</h2>
-              {searchResults.map((flight) => (
-                <div key={flight.id} className="bg-card rounded-xl border border-border p-6 hover:shadow-lg transition-shadow">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">Available Flights ({searchResults.length})</h2>
+                <div className="text-sm text-muted-foreground">Prices include taxes and fees</div>
+              </div>
+
+              {searchResults.map((flight, idx) => (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  key={flight.id}
+                  className="bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl transition-all duration-300 group"
+                >
+                  {/* Card Header - Airline Branding */}
+                  <div className="bg-slate-900 text-white px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
-                        {flight.logo}
+                      <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1">
+                        <span className="text-primary font-bold text-lg">{flight.logo}</span>
                       </div>
                       <div>
-                        <p className="font-semibold">{flight.airline}</p>
-                        <p className="text-sm text-muted-foreground">{flight.flightNumber}</p>
+                        <h3 className="font-bold text-lg leading-none">{flight.airline}</h3>
+                        <p className="text-slate-400 text-sm mt-1">{flight.flightNumber} • {flightClass === 'business' ? 'Business Class' : 'Economy'}</p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 flex-1 justify-center">
-                      <div className="text-center">
-                        <p className="text-lg font-semibold">{flight.departureTime}</p>
-                        <p className="text-sm text-muted-foreground">{flight.from.split(" ")[0]}</p>
-                      </div>
-                      <div className="flex flex-col items-center">
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Clock className="h-3 w-3" /> {flight.duration}
-                        </p>
-                        <div className="w-24 flex items-center gap-1">
-                          <div className="flex-1 h-px bg-border" />
-                          <Plane className="h-3 w-3 text-muted-foreground" />
-                          <div className="flex-1 h-px bg-border" />
+                    <div className="flex gap-2">
+                      {idx === 0 && (
+                        <span className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                          <Star className="h-3 w-3 fill-current" /> BEST VALUE
+                        </span>
+                      )}
+                      {flight.stops === 0 && (
+                        <span className="bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                          <Zap className="h-3 w-3 fill-current" /> FASTEST
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Card Body */}
+                  <div className="p-6">
+                    <div className="flex flex-col lg:flex-row gap-8 items-center">
+
+                      {/* Flight Details */}
+                      <div className="flex-1 w-full grid grid-cols-3 gap-4 items-center text-center">
+                        {/* Departure */}
+                        <div className="text-left">
+                          <p className="text-2xl font-bold">{flight.departureTime}</p>
+                          <p className="font-medium text-foreground/80">{flight.from.split(" ")[0]}</p>
+                          <p className="text-xs text-muted-foreground">{flight.from}</p>
                         </div>
-                        <p className="text-xs text-muted-foreground">{flight.stops} stop ({flight.stopLocation})</p>
+
+                        {/* Duration Graphic */}
+                        <div className="flex flex-col items-center px-4">
+                          <span className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                            <Clock className="h-3 w-3" /> {flight.duration}
+                          </span>
+                          <div className="w-full h-px bg-border relative flex items-center justify-center">
+                            <div className="absolute w-2 h-2 bg-primary rounded-full left-0"></div>
+                            <Plane className="h-4 w-4 text-primary absolute" />
+                            <div className={`absolute w-2 h-2 rounded-full right-0 ${flight.stops === 0 ? 'bg-primary' : 'bg-orange-500'}`}></div>
+                          </div>
+                          <span className={`text-xs mt-2 px-2 py-0.5 rounded-full ${flight.stops === 0 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                            {flight.stops === 0 ? 'Direct' : `${flight.stops} Stop`}
+                          </span>
+                        </div>
+
+                        {/* Arrival */}
+                        <div className="text-right">
+                          <p className="text-2xl font-bold">{flight.arrivalTime}</p>
+                          <p className="font-medium text-foreground/80">{flight.to.split(" ")[0]}</p>
+                          <p className="text-xs text-muted-foreground">{flight.to}</p>
+                        </div>
                       </div>
-                      <div className="text-center">
-                        <p className="text-lg font-semibold">{flight.arrivalTime}</p>
-                        <p className="text-sm text-muted-foreground">{flight.to.split(" ")[0]}</p>
+
+                      {/* Divider */}
+                      <div className="hidden lg:block w-px h-24 bg-border/50"></div>
+
+                      {/* Price & Action */}
+                      <div className="w-full lg:w-auto flex flex-row lg:flex-col justify-between lg:justify-center items-center gap-4 min-w-[180px]">
+                        <div className="text-right lg:text-center">
+                          <p className="text-3xl font-bold text-primary">${flight.price}</p>
+                          <div className="flex items-center gap-1 justify-end lg:justify-center mt-1">
+                            <ShieldCheck className="h-3 w-3 text-green-600" />
+                            <span className="text-xs text-green-600 font-medium">Refundable</span>
+                          </div>
+                        </div>
+                        <Button size="lg" className="w-full lg:w-auto px-8" onClick={() => handleSelectFlight(flight)}>
+                          Select Flight <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
                       </div>
+
                     </div>
 
-                    <div className="text-center md:text-right">
-                      <p className="text-2xl font-bold text-primary">${flight.price}</p>
-                      <p className="text-sm text-muted-foreground">per person</p>
-                      <Button className="mt-2" onClick={() => handleSelectFlight(flight)}>Select</Button>
+                    {/* Footer Info */}
+                    <div className="mt-6 pt-4 border-t border-border flex flex-wrap gap-4 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1 bg-secondary px-2 py-1 rounded">
+                        <Briefcase className="h-3 w-3" /> Baggage: {flight.baggage}
+                      </span>
+                      <span className="flex items-center gap-1 bg-secondary px-2 py-1 rounded">
+                        <Users className="h-3 w-3" /> {flight.cabin}
+                      </span>
+                      {flight.meal && (
+                        <span className="flex items-center gap-1 bg-secondary px-2 py-1 rounded">
+                          🍔 Meal included
+                        </span>
+                      )}
                     </div>
                   </div>
-                  
-                  <div className="mt-4 pt-4 border-t border-border flex flex-wrap gap-4 text-sm text-muted-foreground">
-                    <span>✓ Baggage: {flight.baggage}</span>
-                    <span>✓ Cabin: {flight.cabin}</span>
-                    {flight.meal && <span>✓ Meal included</span>}
-                  </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           )}
@@ -518,52 +580,85 @@ export default function AirTicket() {
           {selectedFlight && !bookingConfirmed && (
             <div className="grid lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-6">
-                <div className="bg-card rounded-xl border border-border p-6">
-                  <h3 className="font-semibold mb-4">Selected Flight</h3>
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
+                <div className="bg-card rounded-xl border border-border p-6 shadow-md">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-lg">Flight Details</h3>
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedFlight(null)} className="text-destructive hover:bg-destructive/10">
+                      Change Flight
+                    </Button>
+                  </div>
+                  <div className="flex items-start gap-4 p-4 bg-secondary/30 rounded-xl border border-border/50">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-xl">
                       {selectedFlight.logo}
                     </div>
                     <div className="flex-1">
-                      <p className="font-semibold">{selectedFlight.airline} - {selectedFlight.flightNumber}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {selectedFlight.from} → {selectedFlight.to}
-                      </p>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-bold text-lg">{selectedFlight.airline}</p>
+                          <p className="text-sm text-muted-foreground">{selectedFlight.flightNumber}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded">Confirmed</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex items-center justify-between">
+                        <div>
+                          <p className="font-bold text-xl">{selectedFlight.departureTime}</p>
+                          <p className="text-sm">{selectedFlight.from}</p>
+                        </div>
+                        <div className="flex flex-col items-center px-4">
+                          <p className="text-xs text-muted-foreground">{selectedFlight.duration}</p>
+                          <ArrowRight className="h-4 w-4 text-muted-foreground my-1" />
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-xl">{selectedFlight.arrivalTime}</p>
+                          <p className="text-sm">{selectedFlight.to}</p>
+                        </div>
+                      </div>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => setSelectedFlight(null)}>Change</Button>
                   </div>
                 </div>
 
-                <div className="bg-card rounded-xl border border-border p-6">
-                  <h3 className="font-semibold mb-4">Passenger Information</h3>
-                  <div className="grid sm:grid-cols-2 gap-4">
+                <div className="bg-card rounded-xl border border-border p-6 shadow-md">
+                  <h3 className="font-semibold mb-6 flex items-center gap-2">
+                    <Users className="h-5 w-5 text-primary" /> Passenger Information
+                  </h3>
+                  <div className="grid sm:grid-cols-2 gap-6">
                     <div>
                       <Label>First Name</Label>
-                      <Input placeholder="First name" />
+                      <Input placeholder="Enter first name" />
                     </div>
                     <div>
                       <Label>Last Name</Label>
-                      <Input placeholder="Last name" />
+                      <Input placeholder="Enter last name" />
                     </div>
                     <div>
-                      <Label>Email</Label>
+                      <Label>Email Address</Label>
                       <Input type="email" placeholder="your@email.com" />
                     </div>
                     <div>
-                      <Label>Phone</Label>
-                      <Input type="tel" placeholder="+1 XXX-XXX-XXXX" />
+                      <Label>Phone Number</Label>
+                      <SmartPhoneInput
+                        placeholder="Enter phone number"
+                        className="h-10"
+                        defaultCountry="BD"
+                        onChange={() => { }}
+                      />
                     </div>
                     <div>
                       <Label>Passport Number</Label>
-                      <Input placeholder="Passport number" />
+                      <Input placeholder="Enter passport number" />
                     </div>
                     <div>
                       <Label>Nationality</Label>
                       <Select>
-                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder="Select nationality" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="ca">Canadian</SelectItem>
-                          <SelectItem value="bd">Bangladeshi</SelectItem>
+                          <SelectItem value="ca">🇨🇦 Canada</SelectItem>
+                          <SelectItem value="bd">🇧🇩 Bangladesh</SelectItem>
+                          <SelectItem value="us">🇺🇸 United States</SelectItem>
+                          <SelectItem value="uk">🇬🇧 United Kingdom</SelectItem>
                           <SelectItem value="other">Other</SelectItem>
                         </SelectContent>
                       </Select>
@@ -573,48 +668,49 @@ export default function AirTicket() {
               </div>
 
               <div>
-                <div className="sticky top-24 bg-card rounded-xl border border-border p-6">
-                  <h3 className="font-semibold mb-4">Booking Summary</h3>
-                  <div className="space-y-3 text-sm mb-4">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Flight</span>
-                      <span>{selectedFlight.flightNumber}</span>
+                <div className="sticky top-24 bg-card rounded-xl border border-border p-6 shadow-lg">
+                  <h3 className="font-semibold mb-4 text-lg">Booking Summary</h3>
+                  <div className="space-y-4 text-sm mb-6">
+                    <div className="flex justify-between items-center pb-2 border-b border-border/50">
+                      <span className="text-muted-foreground">Flight Route</span>
+                      <span className="font-medium text-right">{selectedFlight.from.split(" ")[0]} ➔ {selectedFlight.to.split(" ")[0]}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Route</span>
-                      <span>{selectedFlight.from.split(" ")[0]} → {selectedFlight.to.split(" ")[0]}</span>
-                    </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Passengers</span>
                       <span>{adults} Adult(s)</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Base fare</span>
                       <span>${selectedFlight.price} × {adults}</span>
                     </div>
-                  </div>
-                  <div className="border-t border-border pt-3">
-                    <div className="flex justify-between font-bold text-lg">
-                      <span>Total</span>
-                      <span className="text-primary">${selectedFlight.price * parseInt(adults)}</span>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Taxes & Fees</span>
+                      <span>$0.00</span>
                     </div>
                   </div>
-                  <Button 
-                    className="w-full mt-4 bg-cta hover:bg-cta/90 text-cta-foreground" 
+                  <div className="bg-secondary/50 p-4 rounded-lg flex justify-between items-center mb-6">
+                    <span className="font-semibold">Total Amount</span>
+                    <span className="font-bold text-2xl text-primary">${selectedFlight.price * parseInt(adults)}</span>
+                  </div>
+                  <Button
+                    className="w-full bg-cta hover:bg-cta/90 text-cta-foreground font-bold h-12 text-lg shadow-lg hover:shadow-xl transition-all"
                     onClick={handleBookFlight}
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? (
                       <>
                         <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Booking...
+                        Processing...
                       </>
                     ) : user ? (
-                      "Confirm Booking"
+                      "Confirm Booking Now"
                     ) : (
                       "Login to Book"
                     )}
                   </Button>
+                  <p className="text-xs text-center text-muted-foreground mt-4 flex items-center justify-center gap-1">
+                    <ShieldCheck className="h-3 w-3" /> Secure Payment
+                  </p>
                 </div>
               </div>
             </div>
@@ -628,8 +724,8 @@ export default function AirTicket() {
           <h2 className="section-title mb-8">Popular Airlines</h2>
           <div className="flex flex-wrap justify-center gap-8">
             {["Air Canada", "Biman Bangladesh", "Emirates", "Qatar Airways", "Turkish Airlines"].map((airline) => (
-              <div key={airline} className="bg-card px-6 py-4 rounded-lg shadow-sm border border-border">
-                <p className="font-medium">{airline}</p>
+              <div key={airline} className="bg-card px-6 py-4 rounded-lg shadow-sm border border-border hover:shadow-md transition-all cursor-pointer">
+                <p className="font-medium text-lg">{airline}</p>
               </div>
             ))}
           </div>

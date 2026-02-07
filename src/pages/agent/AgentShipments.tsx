@@ -33,9 +33,9 @@ export default function AgentShipments() {
   });
 
   const statusLabels: Record<string, string> = {
-    pending: "অপেক্ষমান", pickup_scheduled: "পিকআপ নির্ধারিত", picked_up: "পিকআপ হয়েছে",
-    in_transit: "পথে আছে", customs: "কাস্টমসে", out_for_delivery: "ডেলিভারিতে",
-    delivered: "ডেলিভারি সম্পন্ন", cancelled: "বাতিল",
+    pending: "Pending", pickup_scheduled: "Pickup Scheduled", picked_up: "Picked Up",
+    in_transit: "In Transit", customs: "In Customs", out_for_delivery: "Out for Delivery",
+    delivered: "Delivered", cancelled: "Cancelled",
   };
 
   if (loading) {
@@ -44,11 +44,11 @@ export default function AgentShipments() {
 
   return (
     <div>
-      <h1 className="text-2xl sm:text-3xl font-bold font-display mb-6">আমার শিপমেন্ট</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold font-display mb-6">My Shipments</h1>
 
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="ট্র্যাকিং ID, প্রেরক, প্রাপক দিয়ে খুঁজুন..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+        <Input placeholder="Search by Tracking ID, Sender, Receiver..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
       </div>
 
       {filtered.length > 0 ? (
@@ -113,7 +113,7 @@ export default function AgentShipments() {
       ) : (
         <div className="bg-card rounded-xl border border-border/50 p-8 text-center text-muted-foreground">
           <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
-          <p>কোনো শিপমেন্ট অ্যাসাইন করা হয়নি</p>
+          <p>No shipments assigned</p>
         </div>
       )}
     </div>

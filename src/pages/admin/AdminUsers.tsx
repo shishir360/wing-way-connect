@@ -4,24 +4,51 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, RefreshCw, User, ShieldCheck, Truck, CheckCircle, XCircle } from "lucide-react";
+import { Search, RefreshCw, User, ShieldCheck, Truck, CheckCircle, XCircle, Eye, FileText, Download, Power, Ban, Briefcase } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface AgentRequest {
-  id: string;
+  id: string; // user_roles table id
   user_id: string;
   role: string;
   is_approved: boolean;
+  designated_status?: string | null;
   created_at: string;
-  profile?: { full_name: string | null; email: string | null; phone: string | null };
+  profile?: any; // Allow full profile object
 }
 
+const statusOptions = [
+  { value: "pickup", label: "Pickup Agent (Mark as Picked Up)" },
+  { value: "handover", label: "Hub Agent (Mark as Handed Over)" },
+  { value: "checkpoint", label: "Transit Agent (Checkpoint Scan)" },
+  { value: "delivery", label: "Delivery Agent (Mark as Delivered)" }
+];
+
 export default function AdminUsers() {
-  const { profiles, loading, refetch } = useAdminProfiles();
+  const { profiles, loading, error, refetch } = useAdminProfiles();
   const [search, setSearch] = useState("");
   const [agentRequests, setAgentRequests] = useState<AgentRequest[]>([]);
   const [loadingAgents, setLoadingAgents] = useState(true);
-  const [tab, setTab] = useState<"users" | "agents">("users");
+  const [tab, setTab] = useState<"users" | "agents">("agents");
+  const [selectedUser, setSelectedUser] = useState<any>(null); // This is the PROFILE object with extra props
+  const [selectedAgentRole, setSelectedAgentRole] = useState<AgentRequest | null>(null); // This is the ROLE object for the selected agent
+  const [agentDocuments, setAgentDocuments] = useState<any[]>([]);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const { toast } = useToast();
+
+  /* WALLET: Add State for wallets */
+  const [agentWallets, setAgentWallets] = useState<Record<string, any>>({});
 
   useEffect(() => {
     fetchAgentRequests();
@@ -37,22 +64,61 @@ export default function AdminUsers() {
 
     if (roles) {
       const userIds = roles.map(r => r.user_id);
-      const { data: profs } = await supabase.from('profiles').select('user_id, full_name, email, phone').in('user_id', userIds);
+
+      // Fetch ALL profile fields
+      const { data: profs } = await supabase.from('profiles').select('*').in('id', userIds);
+
+      // Fetch Wallets
+      const { data: wallets } = await supabase.from('wallets').select('*').in('user_id', userIds);
+      const walletMap: Record<string, any> = {};
+      wallets?.forEach(w => {
+        walletMap[w.user_id] = w;
+      });
+      setAgentWallets(walletMap);
+
       const merged = roles.map(r => ({
         ...r,
-        profile: profs?.find(p => p.user_id === r.user_id) || null,
+        profile: profs?.find(p => p.id === r.user_id) || null,
+        wallet: walletMap[r.user_id] || null
       }));
       setAgentRequests(merged as any);
     }
     setLoadingAgents(false);
   };
 
+  const fetchAgentDocuments = async (userId: string) => {
+    const { data } = await supabase
+      .from('agent_documents')
+      .select('*')
+      .eq('user_id', userId);
+    setAgentDocuments(data || []);
+  };
+
+  const handleUserClick = async (user: any, roleOverride?: string, roleObj?: AgentRequest) => {
+    setSelectedUser({ ...user, role: roleOverride || user.role, wallet: agentWallets[user.id || user.user_id] });
+    setSelectedAgentRole(roleObj || null);
+
+    if (roleOverride?.includes('Agent') || user.role === 'agent') {
+      await fetchAgentDocuments(user.user_id || user.id);
+
+      // If we didn't receive the roleObj (e.g. from Users tab), try to find it
+      if (!roleObj && user.role === 'agent') {
+        const found = agentRequests.find(ar => ar.user_id === user.id);
+        if (found) setSelectedAgentRole(found);
+      }
+    } else {
+      setAgentDocuments([]);
+      setSelectedAgentRole(null);
+    }
+    setIsDetailsOpen(true);
+  };
+
   const handleApprove = async (roleId: string) => {
     const { error } = await supabase.from('user_roles').update({ is_approved: true }).eq('id', roleId);
     if (error) {
-      toast({ title: "ব্যর্থ", description: error.message, variant: "destructive" });
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "এজেন্ট অ্যাপ্রুভ হয়েছে ✅" });
+      toast({ title: "Agent Approved ✅" });
       fetchAgentRequests();
     }
   };
@@ -60,14 +126,55 @@ export default function AdminUsers() {
   const handleReject = async (roleId: string) => {
     const { error } = await supabase.from('user_roles').delete().eq('id', roleId);
     if (error) {
-      toast({ title: "ব্যর্থ", description: error.message, variant: "destructive" });
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "এজেন্ট রিজেক্ট হয়েছে" });
+      toast({ title: "Agent Rejected" });
       fetchAgentRequests();
     }
   };
 
+  const toggleUserActivation = async (userId: string, currentStatus: boolean) => {
+    const newStatus = !currentStatus;
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_active: newStatus })
+      .eq('id', userId);
+
+    if (error) {
+      toast({ title: "Update Failed", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: newStatus ? "User Activated ✅" : "User Deactivated ⛔" });
+      refetch();
+      if (selectedUser && selectedUser.id === userId) {
+        setSelectedUser({ ...selectedUser, is_active: newStatus });
+      }
+    }
+  };
+
+  const updateDesignatedStatus = async (status: string) => {
+    if (!selectedAgentRole) return;
+    const { error } = await supabase
+      .from('user_roles')
+      .update({ designated_status: status === "none" ? null : status })
+      .eq('id', selectedAgentRole.id);
+
+    if (error) {
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Job Assigned ✅", description: "Agent scanner will now auto-select this status." });
+      setSelectedAgentRole({ ...selectedAgentRole, designated_status: status === "none" ? null : status });
+      fetchAgentRequests(); // Refresh list
+    }
+  };
+
   const filtered = profiles.filter(p => {
+    // Exclude admins from the user list if needed, or keep for full visibility
+    if (p.role === 'admin' || p.role === 'super_admin') return false;
+
+    // Explicitly hide the main admin (handling typos like gmai.com vs gmail.com)
+    const emailLower = (p.email || '').toLowerCase();
+    if (emailLower.includes('shishirmd681')) return false;
+
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -84,7 +191,7 @@ export default function AdminUsers() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold font-display">ইউজার ও এজেন্ট</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold font-display">Users & Agents</h1>
         <Button variant="outline" size="sm" onClick={() => { refetch(); fetchAgentRequests(); }}>
           <RefreshCw className="h-4 w-4 mr-2" /> Refresh
         </Button>
@@ -93,10 +200,10 @@ export default function AdminUsers() {
       {/* Tabs */}
       <div className="flex bg-muted rounded-xl p-1 mb-6 max-w-xs">
         <button onClick={() => setTab("users")} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${tab === "users" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>
-          <User className="h-4 w-4 inline mr-1" />ইউজার
+          <User className="h-4 w-4 inline mr-1" />Users
         </button>
         <button onClick={() => setTab("agents")} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all relative ${tab === "agents" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>
-          <Truck className="h-4 w-4 inline mr-1" />এজেন্ট
+          <Truck className="h-4 w-4 inline mr-1" />Agents
           {pendingAgents.length > 0 && (
             <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">{pendingAgents.length}</span>
           )}
@@ -109,12 +216,34 @@ export default function AdminUsers() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search by name, email, phone..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
           </div>
+          {error && (
+            <div className="bg-destructive/10 text-destructive p-4 rounded-xl mb-6 border border-destructive/20">
+              <p className="font-semibold">Error loading users</p>
+              <p className="text-sm">{error}</p>
+              <p className="text-xs mt-2 text-muted-foreground">Note: If you are not an admin, you may not have permission to view this list.</p>
+            </div>
+          )}
+          {filtered.length === 0 && !loading && (
+            <div className="text-center py-12 bg-muted/30 rounded-2xl border-2 border-dashed border-border">
+              <p className="text-muted-foreground">No users found.</p>
+            </div>
+          )}
+
           {loading ? (
             <div className="flex justify-center py-12"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map(p => (
-                <div key={p.id} className="bg-card rounded-2xl border border-border/50 p-5 hover:shadow-md transition-all">
+                <div
+                  key={p.id}
+                  className={`bg-card rounded-2xl border ${p.is_active === false ? 'border-destructive/30 bg-destructive/5' : 'border-border/50'} p-5 hover:shadow-md transition-all cursor-pointer relative group`}
+                  onClick={() => handleUserClick(p)}
+                >
+                  <div className="absolute top-3 right-3 flex gap-2">
+                    <Badge variant={p.is_active === false ? "destructive" : "outline"} className="text-[10px]">
+                      {p.is_active === false ? "Inactive" : "Active"}
+                    </Badge>
+                  </div>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                       <User className="h-5 w-5 text-primary" />
@@ -128,13 +257,9 @@ export default function AdminUsers() {
                     <div className="flex justify-between"><span className="text-muted-foreground">Phone</span><span>{p.phone || '-'}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">City</span><span>{p.city || '-'}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Country</span><span>{p.country || '-'}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Joined</span><span>{new Date(p.created_at).toLocaleDateString()}</span></div>
                   </div>
                 </div>
               ))}
-              {filtered.length === 0 && (
-                <div className="col-span-full text-center py-12 text-muted-foreground">No users found</div>
-              )}
             </div>
           )}
         </>
@@ -144,11 +269,21 @@ export default function AdminUsers() {
             <div className="mb-6">
               <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
                 <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
-                অনুমোদনের অপেক্ষায় ({pendingAgents.length})
+                Pending Approval ({pendingAgents.length})
               </h2>
               <div className="grid sm:grid-cols-2 gap-4">
                 {pendingAgents.map(a => (
-                  <div key={a.id} className="bg-card rounded-2xl border-2 border-yellow-500/30 p-5">
+                  <div
+                    key={a.id}
+                    className="bg-card rounded-2xl border-2 border-yellow-500/30 p-5 relative hover:shadow-md transition-all cursor-pointer"
+                    onClick={() => handleUserClick(a.profile, 'Agent (Pending)', a)}
+                  >
+                    <div className="absolute top-3 right-3">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
+
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center">
                         <Truck className="h-5 w-5 text-yellow-600" />
@@ -158,13 +293,13 @@ export default function AdminUsers() {
                         <p className="text-xs text-muted-foreground">{a.profile?.email || '-'}</p>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-3">ফোন: {a.profile?.phone || '-'}</p>
+                    <p className="text-sm text-muted-foreground mb-3">Phone: {a.profile?.phone || '-'}</p>
                     <div className="flex gap-2">
-                      <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white" onClick={() => handleApprove(a.id)}>
-                        <CheckCircle className="h-4 w-4 mr-1" />অ্যাপ্রুভ
+                      <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white" onClick={(e) => { e.stopPropagation(); handleApprove(a.id); }}>
+                        <CheckCircle className="h-4 w-4 mr-1" />Approve
                       </Button>
-                      <Button size="sm" variant="destructive" className="flex-1" onClick={() => handleReject(a.id)}>
-                        <XCircle className="h-4 w-4 mr-1" />রিজেক্ট
+                      <Button size="sm" variant="destructive" className="flex-1" onClick={(e) => { e.stopPropagation(); handleReject(a.id); }}>
+                        <XCircle className="h-4 w-4 mr-1" />Reject
                       </Button>
                     </div>
                   </div>
@@ -173,13 +308,22 @@ export default function AdminUsers() {
             </div>
           )}
 
-          <h2 className="text-lg font-bold mb-3">অ্যাপ্রুভড এজেন্ট ({approvedAgents.length})</h2>
+          <h2 className="text-lg font-bold mb-3">Approved Agents ({approvedAgents.length})</h2>
           {loadingAgents ? (
             <div className="flex justify-center py-12"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>
           ) : approvedAgents.length > 0 ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {approvedAgents.map(a => (
-                <div key={a.id} className="bg-card rounded-2xl border border-border/50 p-5">
+                <div
+                  key={a.id}
+                  className="bg-card rounded-2xl border border-border/50 p-5 relative hover:shadow-md transition-all cursor-pointer"
+                  onClick={() => handleUserClick(a.profile, 'Agent (Approved)', a)}
+                >
+                  <div className="absolute top-3 right-3">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
                       <ShieldCheck className="h-5 w-5 text-green-600" />
@@ -189,18 +333,170 @@ export default function AdminUsers() {
                       <p className="text-xs text-muted-foreground">{a.profile?.email || '-'}</p>
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground">ফোন: {a.profile?.phone || '-'}</p>
-                  <p className="text-xs text-muted-foreground mt-1">যোগদান: {new Date(a.created_at).toLocaleDateString()}</p>
+                  <p className="text-sm text-muted-foreground">Phone: {a.profile?.phone || '-'}</p>
+
+                  {/* WALLET DISPLAY */}
+                  <div className="mt-2 text-xs font-mono bg-muted/50 p-1.5 rounded-md flex justify-between items-center">
+                    <span>Balance:</span>
+                    <span className={`font-bold ${(a as any).wallet?.balance < 0 ? 'text-destructive' : 'text-green-600'}`}>
+                      {(a as any).wallet?.currency || 'BDT'} {(a as any).wallet?.balance || '0.00'}
+                    </span>
+                  </div>
+
+                  {a.designated_status && (
+                    <Badge variant="outline" className="mt-2 text-[10px] capitalize">
+                      Job: {a.designated_status.replace('_', ' ')}
+                    </Badge>
+                  )}
                 </div>
               ))}
             </div>
           ) : (
             <div className="bg-card rounded-xl border border-border/50 p-8 text-center text-muted-foreground">
-              কোনো এজেন্ট নেই
+              No agents found
             </div>
           )}
         </>
       )}
+
+      {/* User Details Dialog */}
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {selectedUser?.role?.includes('Agent') ? <Truck className="h-5 w-5" /> : <User className="h-5 w-5" />}
+              {selectedUser?.full_name}
+              {selectedUser?.is_active === false && <Badge variant="destructive" className="ml-2">Inactive</Badge>}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedUser?.role || "User Details"}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedUser && (
+            <Tabs defaultValue="info" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="info">Profile Info</TabsTrigger>
+                <TabsTrigger value="documents" disabled={!selectedUser.role?.includes('Agent')}>Documents</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="info" className="space-y-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-medium text-muted-foreground">Full Name</h4>
+                    <p className="font-medium">{selectedUser.full_name || "N/A"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-medium text-muted-foreground">Email</h4>
+                    <p className="font-medium">{selectedUser.email || "N/A"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-medium text-muted-foreground">Phone</h4>
+                    <p className="font-medium">{selectedUser.phone || "N/A"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-medium text-muted-foreground">Status</h4>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={selectedUser.is_active !== false ? "default" : "secondary"}>
+                        {selectedUser.is_active !== false ? "Active" : "Inactive"}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-medium text-muted-foreground">Country</h4>
+                    <p className="font-medium">{selectedUser.country || "N/A"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-medium text-muted-foreground">City</h4>
+                    <p className="font-medium">{selectedUser.city || "N/A"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-medium text-muted-foreground">Role</h4>
+                    <Badge variant={selectedUser.role?.includes('Pending') ? "destructive" : "secondary"}>
+                      {selectedUser.role || "User"}
+                    </Badge>
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-medium text-muted-foreground">Joined</h4>
+                    <p className="font-medium">{selectedUser.created_at ? format(new Date(selectedUser.created_at), "PPP") : "N/A"}</p>
+                  </div>
+                </div>
+
+                {/* JOB ASSIGNMENT FOR AGENTS */}
+                {selectedUser.role?.includes('Agent') && selectedAgentRole && (
+                  <div className="pt-4 mt-4 border-t">
+                    <h4 className="text-sm font-medium mb-3 flex items-center gap-2"><Briefcase className="h-4 w-4" /> Assigned Job Role</h4>
+                    <p className="text-xs text-muted-foreground mb-3">Select the dedicated function for this agent. Their scanner will automatically apply this status.</p>
+
+                    <Select
+                      value={selectedAgentRole.designated_status || "none"}
+                      onValueChange={updateDesignatedStatus}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="No specific role assigned" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No specific role (Manual Select)</SelectItem>
+                        {statusOptions.map(opt => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <div className="pt-4 mt-4 border-t">
+                  <h4 className="text-sm font-medium mb-3">Account Actions</h4>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={selectedUser.is_active !== false ? "destructive" : "default"}
+                      className="w-full"
+                      onClick={() => toggleUserActivation(selectedUser.id, selectedUser.is_active !== false)}
+                    >
+                      {selectedUser.is_active !== false ? (
+                        <><Ban className="h-4 w-4 mr-2" /> Deactivate Account</>
+                      ) : (
+                        <><CheckCircle className="h-4 w-4 mr-2" /> Activate Account</>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="documents" className="py-4">
+                {agentDocuments.length > 0 ? (
+                  <div className="space-y-4">
+                    {agentDocuments.map((doc, i) => (
+                      <div key={doc.id || i} className="flex items-center justify-between p-4 bg-muted/40 rounded-lg border">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-primary/10 rounded-full">
+                            <FileText className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium capitalize">{doc.document_type.replace('_', ' ')}</p>
+                            <p className="text-xs text-muted-foreground">Uploaded on {new Date(doc.created_at).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => window.open(doc.document_url, '_blank')}>
+                          <Download className="h-4 w-4 mr-2" /> View
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border-2 border-dashed">
+                    No documents uploaded by this agent.
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          )}
+
+          <div className="flex justify-end mt-4">
+            <Button variant="outline" onClick={() => setIsDetailsOpen(false)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

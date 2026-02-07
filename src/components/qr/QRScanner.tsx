@@ -25,7 +25,7 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
           onScan(decodedText);
           stopScanning();
         },
-        () => {} // ignore errors during scanning
+        () => { } // ignore errors during scanning
       );
       setIsScanning(true);
     } catch (err: any) {
@@ -43,7 +43,7 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
   useEffect(() => {
     return () => {
       if (scannerRef.current?.isScanning) {
-        scannerRef.current.stop().catch(() => {});
+        scannerRef.current.stop().catch(() => { });
       }
     };
   }, []);
@@ -55,7 +55,16 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
         className="w-full rounded-xl overflow-hidden bg-muted min-h-[250px] flex items-center justify-center"
       >
         {!isScanning && (
-          <p className="text-muted-foreground text-sm">ক্যামেরা বন্ধ আছে</p>
+          <div className="text-center p-4">
+            <p className="text-muted-foreground text-sm mb-2">Camera is off</p>
+            {!window.isSecureContext && (
+              <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+                ⚠️ Camera requires HTTPS (Secure Context).
+                <br />
+                Please ensure you are accessing via <strong>https://</strong>
+              </div>
+            )}
+          </div>
         )}
       </div>
       <Button

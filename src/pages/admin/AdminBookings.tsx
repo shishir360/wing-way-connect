@@ -4,7 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Search, RefreshCw } from "lucide-react";
+import { Search, RefreshCw, Plane, Calendar, User, CreditCard, Info } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 
 const bookingStatuses = ["pending", "confirmed", "cancelled", "completed"];
 const statusLabels: Record<string, string> = {
@@ -16,6 +25,9 @@ export default function AdminBookings() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [updating, setUpdating] = useState<string | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [bookerProfile, setBookerProfile] = useState<any>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
   const { toast } = useToast();
 
   const filtered = bookings.filter(b => {
@@ -32,11 +44,26 @@ export default function AdminBookings() {
     try {
       await updateBookingStatus(id, newStatus);
       toast({ title: "Updated", description: `${ref} → ${statusLabels[newStatus]}` });
+      if (selectedBooking && selectedBooking.id === id) {
+        setSelectedBooking({ ...selectedBooking, status: newStatus });
+      }
     } catch (e: any) {
       toast({ title: "Failed", description: e.message, variant: "destructive" });
     } finally {
       setUpdating(null);
     }
+  };
+
+  const handleRowClick = async (booking: any) => {
+    setSelectedBooking(booking);
+    setLoadingProfile(true);
+    setBookerProfile(null);
+
+    if (booking.user_id) {
+      const { data } = await supabase.from('profiles').select('*').eq('id', booking.user_id).single();
+      setBookerProfile(data);
+    }
+    setLoadingProfile(false);
   };
 
   return (
@@ -78,30 +105,35 @@ export default function AdminBookings() {
                   <th className="p-4">Passengers</th>
                   <th className="p-4">Class</th>
                   <th className="p-4">Status</th>
-                  <th className="p-4">Update</th>
+                  <th className="p-4">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map(b => (
-                  <tr key={b.id} className="border-b border-border/50 hover:bg-muted/30">
-                    <td className="p-4 font-medium text-primary">{b.booking_ref}</td>
+                  <tr
+                    key={b.id}
+                    className="border-b border-border/50 hover:bg-muted/30 cursor-pointer transition-colors"
+                    onClick={() => handleRowClick(b)}
+                  >
+                    <td className="p-4 font-medium text-primary flex items-center gap-2">
+                      <Plane className="h-4 w-4" /> {b.booking_ref}
+                    </td>
                     <td className="p-4">{b.from_city} → {b.to_city}</td>
                     <td className="p-4">{new Date(b.departure_date).toLocaleDateString()}</td>
-                    <td className="p-4">{b.adults + b.children}</td>
-                    <td className="p-4 capitalize">{b.cabin_class}</td>
+                    <td className="p-4 text-center">{b.adults + b.children || b.passengers || 1}</td>
+                    <td className="p-4 capitalize">{b.cabin_class || b.class}</td>
                     <td className="p-4">
-                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
-                        b.status === 'confirmed' ? 'bg-green-500/10 text-green-600' :
-                        b.status === 'pending' ? 'bg-yellow-500/10 text-yellow-600' :
-                        b.status === 'cancelled' ? 'bg-red-500/10 text-red-600' :
-                        'bg-blue-500/10 text-blue-600'
-                      }`}>
+                      <Badge variant={
+                        b.status === 'confirmed' ? 'default' :
+                          b.status === 'pending' ? 'secondary' :
+                            'destructive'
+                      }>
                         {statusLabels[b.status] || b.status}
-                      </span>
+                      </Badge>
                     </td>
-                    <td className="p-4">
+                    <td className="p-4" onClick={(e) => e.stopPropagation()}>
                       <Select value={b.status} onValueChange={(v) => handleStatusUpdate(b.id, v, b.booking_ref)} disabled={updating === b.id}>
-                        <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {bookingStatuses.map(s => <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>)}
                         </SelectContent>
@@ -117,6 +149,127 @@ export default function AdminBookings() {
           </div>
         </div>
       )}
+
+      {/* Booking Details Dialog */}
+      <Dialog open={!!selectedBooking} onOpenChange={(open) => !open && setSelectedBooking(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between mr-8">
+              <div>
+                <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                  <Plane className="h-6 w-6 text-primary" />
+                  Flight Booking
+                </DialogTitle>
+                <DialogDescription>
+                  Reference: <span className="font-mono text-primary font-bold">{selectedBooking?.booking_ref}</span>
+                </DialogDescription>
+              </div>
+              <Badge className="text-sm px-3 py-1" variant={
+                selectedBooking?.status === 'confirmed' ? 'default' :
+                  selectedBooking?.status === 'pending' ? 'secondary' :
+                    'destructive'
+              }>
+                {selectedBooking ? statusLabels[selectedBooking.status] : ''}
+              </Badge>
+            </div>
+          </DialogHeader>
+
+          {selectedBooking && (
+            <div className="space-y-6 py-4">
+              {/* Route Info */}
+              <div className="grid md:grid-cols-2 gap-6 p-4 bg-muted/30 rounded-xl border border-border/50">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">From</p>
+                  <p className="text-xl font-bold">{selectedBooking.from_city || selectedBooking.departure_city}</p>
+                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    {new Date(selectedBooking.departure_date).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="space-y-1 md:text-right">
+                  <p className="text-sm text-muted-foreground">To</p>
+                  <p className="text-xl font-bold">{selectedBooking.to_city || selectedBooking.arrival_city}</p>
+                  {selectedBooking.return_date && (
+                    <p className="text-sm text-muted-foreground flex items-center gap-1 md:justify-end">
+                      <Calendar className="h-3 w-3" />
+                      Return: {new Date(selectedBooking.return_date).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Flight Details */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-3 bg-card rounded-lg border">
+                  <p className="text-xs text-muted-foreground mb-1">Airline</p>
+                  <p className="font-semibold">{selectedBooking.airline || "N/A"}</p>
+                </div>
+                <div className="p-3 bg-card rounded-lg border">
+                  <p className="text-xs text-muted-foreground mb-1">Flight No</p>
+                  <p className="font-semibold">{selectedBooking.flight_number || "N/A"}</p>
+                </div>
+                <div className="p-3 bg-card rounded-lg border">
+                  <p className="text-xs text-muted-foreground mb-1">Class</p>
+                  <p className="font-semibold capitalize">{selectedBooking.cabin_class || selectedBooking.class || "Economy"}</p>
+                </div>
+                <div className="p-3 bg-card rounded-lg border">
+                  <p className="text-xs text-muted-foreground mb-1">Passengers</p>
+                  <p className="font-semibold">{selectedBooking.adults + (selectedBooking.children || 0) || selectedBooking.passengers} Person(s)</p>
+                </div>
+              </div>
+
+              {/* Booker Info */}
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <User className="h-4 w-4" /> Booker Information
+                </h3>
+                {loadingProfile ? (
+                  <div className="h-16 bg-muted animate-pulse rounded-lg" />
+                ) : bookerProfile ? (
+                  <div className="bg-card p-4 rounded-xl border grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Name</p>
+                      <p className="font-medium">{bookerProfile.full_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Email</p>
+                      <p className="font-medium">{bookerProfile.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Phone</p>
+                      <p className="font-medium">{bookerProfile.phone}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-muted/50 rounded-xl text-muted-foreground text-sm">
+                    Guest or Unknown User
+                  </div>
+                )}
+              </div>
+
+              {/* Payment / Cost */}
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" /> Payment Info
+                </h3>
+                <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 flex justify-between items-center">
+                  <div>
+                    <p className="text-sm font-medium">Total Cost</p>
+                    <p className="text-xs text-muted-foreground">Includes taxes & fees</p>
+                  </div>
+                  <p className="text-2xl font-bold text-primary">
+                    {selectedBooking.total_price ? `$${selectedBooking.total_price}` : "Quote Request"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4 border-t">
+                <Button onClick={() => setSelectedBooking(null)}>Close Details</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

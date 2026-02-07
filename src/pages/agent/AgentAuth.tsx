@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SmartPhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,6 +16,7 @@ export default function AgentAuth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const { signIn, signUp, user } = useAuth();
@@ -35,11 +37,11 @@ export default function AgentAuth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast({ title: "সব ফিল্ড পূরণ করুন", description: "ইমেইল ও পাসওয়ার্ড আবশ্যক", variant: "destructive" });
+      toast({ title: "Please fill all fields", description: "Email and password are required", variant: "destructive" });
       return;
     }
     if (!isLogin && password.length < 6) {
-      toast({ title: "পাসওয়ার্ড ছোট", description: "পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে", variant: "destructive" });
+      toast({ title: "Weak Password", description: "Password must be at least 6 characters", variant: "destructive" });
       return;
     }
 
@@ -54,31 +56,31 @@ export default function AgentAuth() {
           if (loggedUser) {
             const { data } = await supabase.from('user_roles').select('role, is_approved').eq('user_id', loggedUser.id).eq('role', 'agent').maybeSingle();
             if (data && data.is_approved) {
-              toast({ title: "স্বাগতম! 🚚", description: "এজেন্ট ড্যাশবোর্ডে যাচ্ছেন" });
+              toast({ title: "Welcome! 🚚", description: "Redirecting to Agent Dashboard" });
               navigate("/agent");
             } else if (data && !data.is_approved) {
-              toast({ title: "অপেক্ষা করুন", description: "আপনার অ্যাকাউন্ট এখনও অ্যাপ্রুভ হয়নি", variant: "destructive" });
+              toast({ title: "Pending Approval", description: "Your account is not approved yet", variant: "destructive" });
               await supabase.auth.signOut();
             } else {
-              toast({ title: "এজেন্ট নন", description: "এই অ্যাকাউন্টে এজেন্ট অ্যাক্সেস নেই", variant: "destructive" });
+              toast({ title: "Not an Agent", description: "This account does not have agent access", variant: "destructive" });
               await supabase.auth.signOut();
             }
           }
         }
       } else {
-        const { error } = await signUp(email, password, fullName);
+        const { error } = await signUp(email, password, fullName, phone);
         if (error) {
-          toast({ title: "রেজিস্ট্রেশন ব্যর্থ", description: error.message, variant: "destructive" });
+          toast({ title: "Registration Failed", description: error.message, variant: "destructive" });
         } else {
           const { data: { user: newUser } } = await supabase.auth.getUser();
           if (newUser) {
             await supabase.from('user_roles').insert({ user_id: newUser.id, role: 'agent' as any, is_approved: false });
           }
-          toast({ title: "রেজিস্ট্রেশন সফল! 🎉", description: "ইমেইল ভেরিফাই করুন। এডমিন অ্যাপ্রুভ করার পর লগইন করতে পারবেন।" });
+          toast({ title: "Registration Successful! 🎉", description: "Please verify your email. Login after admin approval." });
         }
       }
     } catch {
-      toast({ title: "সমস্যা হয়েছে", description: "আবার চেষ্টা করুন", variant: "destructive" });
+      toast({ title: "Something went wrong", description: "Please try again", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -93,10 +95,10 @@ export default function AgentAuth() {
             <div className="w-16 h-16 rounded-2xl bg-yellow-500/10 flex items-center justify-center mx-auto mb-4">
               <Truck className="h-8 w-8 text-yellow-600" />
             </div>
-            <h1 className="text-2xl font-bold font-display mb-2">অনুমোদনের অপেক্ষায়</h1>
-            <p className="text-muted-foreground mb-6">আপনার এজেন্ট অ্যাকাউন্ট এডমিন অ্যাপ্রুভ করার পর লগইন করতে পারবেন।</p>
+            <h1 className="text-2xl font-bold font-display mb-2">Pending Approval</h1>
+            <p className="text-muted-foreground mb-6">You can login after admin approves your agent account.</p>
             <Button variant="outline" onClick={async () => { await supabase.auth.signOut(); navigate("/"); }}>
-              হোমে ফিরুন
+              Back to Home
             </Button>
           </div>
         </motion.div>
@@ -120,54 +122,68 @@ export default function AgentAuth() {
               <Truck className="h-8 w-8 text-primary" />
             </div>
             <h1 className="text-2xl font-bold font-display mb-2">
-              {isLogin ? "এজেন্ট লগইন" : "এজেন্ট রেজিস্ট্রেশন"}
+              {isLogin ? "Agent Login" : "Agent Registration"}
             </h1>
-            <p className="text-muted-foreground text-sm">ডেলিভারি এজেন্ট পোর্টাল</p>
+            <p className="text-muted-foreground text-sm">Delivery Agent Portal</p>
           </div>
 
           <div className="flex bg-muted rounded-xl p-1 mb-6">
-            <button onClick={() => setIsLogin(true)} className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${isLogin ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>লগইন</button>
-            <button onClick={() => setIsLogin(false)} className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${!isLogin ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>রেজিস্টার</button>
+            <button onClick={() => setIsLogin(true)} className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${isLogin ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>Login</button>
+            <button onClick={() => setIsLogin(false)} className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${!isLogin ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>Register</button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <div>
-                <Label className="text-sm font-medium">পুরো নাম</Label>
+                <Label className="text-sm font-medium">Full Name</Label>
                 <div className="relative mt-1.5">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input type="text" placeholder="আপনার নাম" value={fullName} onChange={(e) => setFullName(e.target.value)} className="pl-10 h-12 rounded-xl bg-muted/50" />
+                  <Input type="text" placeholder="Your Name" value={fullName} onChange={(e) => setFullName(e.target.value)} className="pl-10 h-12 rounded-xl bg-muted/50" />
+                </div>
+              </div>
+            )}
+            {!isLogin && (
+              <div>
+                <Label className="text-sm font-medium">Phone Number</Label>
+                <div className="mt-1.5">
+                  <SmartPhoneInput
+                    placeholder="Enter phone number"
+                    defaultCountry="BD"
+                    value={phone}
+                    onChange={setPhone}
+                    className="h-12"
+                  />
                 </div>
               </div>
             )}
             <div>
-              <Label className="text-sm font-medium">ইমেইল</Label>
+              <Label className="text-sm font-medium">Email</Label>
               <div className="relative mt-1.5">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="pl-10 h-12 rounded-xl bg-muted/50" />
               </div>
             </div>
             <div>
-              <Label className="text-sm font-medium">পাসওয়ার্ড</Label>
+              <Label className="text-sm font-medium">Password</Label>
               <div className="relative mt-1.5">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10 h-12 rounded-xl bg-muted/50" />
               </div>
             </div>
             <Button type="submit" disabled={isLoading} className="w-full h-12 rounded-xl text-base bg-cta hover:bg-cta/90 text-cta-foreground shadow-lg">
-              {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{isLogin ? "লগইন" : "রেজিস্টার"}<ArrowRight className="h-5 w-5 ml-2" /></>}
+              {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{isLogin ? "Login" : "Register"}<ArrowRight className="h-5 w-5 ml-2" /></>}
             </Button>
           </form>
 
           <div className="mt-6 p-4 bg-muted/50 rounded-xl">
             <p className="text-xs text-center text-muted-foreground">
-              {isLogin ? "রেজিস্ট্রেশনের পর এডমিন অ্যাপ্রুভ করলে লগইন করতে পারবেন" : "রেজিস্ট্রেশনের পর এডমিন অনুমোদন দেবে"}
+              {isLogin ? "You can login after admin approves your registration" : "Admin will approve after registration"}
             </p>
           </div>
         </div>
 
         <div className="text-center mt-6">
-          <Link to="/" className="text-white/70 hover:text-white text-sm transition-colors">← হোমে ফিরুন</Link>
+          <Link to="/" className="text-white/70 hover:text-white text-sm transition-colors">← Back to Home</Link>
         </div>
       </motion.div>
     </div>

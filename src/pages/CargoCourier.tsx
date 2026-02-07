@@ -3,6 +3,7 @@ import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SmartPhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -31,7 +32,7 @@ export default function CargoCourier() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const initialRoute = searchParams.get("route") as "bd-to-ca" | "ca-to-bd" | null;
-  
+
   const [route, setRoute] = useState<"bd-to-ca" | "ca-to-bd">(initialRoute || "ca-to-bd");
   const [formData, setFormData] = useState({
     fromCity: "",
@@ -75,37 +76,37 @@ export default function CargoCourier() {
       if (pendingBooking && user) {
         const bookingData = JSON.parse(pendingBooking);
         localStorage.removeItem(PENDING_BOOKING_KEY);
-        
+
         // Set form data and submit
         setRoute(bookingData.route);
         setFormData(bookingData.formData);
-        
+
         // Auto-submit after restoring data
         await submitBooking(bookingData.route, bookingData.formData, bookingData.priceBreakdown);
       }
     };
-    
+
     processPendingBooking();
   }, [user]);
 
   const submitBooking = async (
-    bookingRoute: string, 
-    data: typeof formData, 
+    bookingRoute: string,
+    data: typeof formData,
     pricing: typeof priceBreakdown
   ) => {
     if (!user) return;
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // Generate tracking ID
       const { data: trackingData, error: trackingError } = await supabase
         .rpc('generate_tracking_id');
-      
+
       if (trackingError) throw trackingError;
-      
+
       const trackingId = trackingData || `WC-SH-${Math.floor(10000 + Math.random() * 90000)}`;
-      
+
       // Insert shipment to database
       const { error: insertError } = await supabase
         .from('shipments')
@@ -135,12 +136,12 @@ export default function CargoCourier() {
           has_insurance: data.insurance,
           is_fragile: data.fragile,
         });
-      
+
       if (insertError) throw insertError;
-      
+
       setBookingId(trackingId);
       setSubmitted(true);
-      
+
       toast({
         title: "Booking Successful! 🎉",
         description: `Your Tracking ID: ${trackingId}`,
@@ -159,13 +160,32 @@ export default function CargoCourier() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate
-    if (!formData.senderName || !formData.senderPhone || !formData.senderEmail || 
-        !formData.receiverName || !formData.receiverPhone || !formData.contents || weight < 0.5) {
+    console.log("Submitting Form Data:", formData);
+
+    // Detailed validation
+    const missingFields: string[] = [];
+    if (!formData.senderName) missingFields.push("Sender Name");
+    if (!formData.senderPhone) missingFields.push("Sender Phone");
+    if (!formData.senderEmail) missingFields.push("Sender Email");
+    if (!formData.pickupAddress) missingFields.push("Pickup Address");
+    if (!formData.receiverName) missingFields.push("Receiver Name");
+    if (!formData.receiverPhone) missingFields.push("Receiver Phone");
+    if (!formData.deliveryAddress) missingFields.push("Delivery Address");
+    if (!formData.contents) missingFields.push("Contents");
+
+    if (missingFields.length > 0) {
       toast({
-        title: "Fill all required fields",
-        description: "Weight must be at least 0.5 kg",
+        title: "Required Fields Missing",
+        description: `Please fill: ${missingFields.join(', ')}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (weight < 0.5) {
+      toast({
+        title: "Invalid Weight",
+        description: "Minimum weight is 0.5 kg",
         variant: "destructive",
       });
       return;
@@ -179,12 +199,12 @@ export default function CargoCourier() {
         priceBreakdown,
       };
       localStorage.setItem(PENDING_BOOKING_KEY, JSON.stringify(pendingBooking));
-      
+
       toast({
         title: "Login Required",
         description: "Please login to complete your booking. Your booking will be auto-confirmed after login.",
       });
-      
+
       navigate("/auth");
       return;
     }
@@ -281,7 +301,7 @@ export default function CargoCourier() {
           animate={{ y: [0, -12, 0], scale: [1, 1.05, 1] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
         />
-        
+
         <div className="container-wacc relative">
           <div className="flex items-center gap-2 text-primary-foreground/70 text-sm mb-4">
             <Link to="/" className="hover:text-primary-foreground">Home</Link>
@@ -307,7 +327,7 @@ export default function CargoCourier() {
           animate={{ y: [0, -10, 0] }}
           transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
         />
-        
+
         <div className="container-wacc">
           {/* Route Selection */}
           <div className="mb-10">
@@ -315,11 +335,10 @@ export default function CargoCourier() {
             <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
               <button
                 onClick={() => setRoute("bd-to-ca")}
-                className={`p-6 rounded-xl border-2 transition-all ${
-                  route === "bd-to-ca"
-                    ? "border-route-bd-ca bg-route-bd-ca/5"
-                    : "border-border hover:border-route-bd-ca/50"
-                }`}
+                className={`p-6 rounded-xl border-2 transition-all ${route === "bd-to-ca"
+                  ? "border-route-bd-ca bg-route-bd-ca/5"
+                  : "border-border hover:border-route-bd-ca/50"
+                  }`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-semibold text-lg">Bangladesh to Canada</span>
@@ -331,14 +350,13 @@ export default function CargoCourier() {
                   <span className="text-xl">🇨🇦</span>
                 </div>
               </button>
-              
+
               <button
                 onClick={() => setRoute("ca-to-bd")}
-                className={`p-6 rounded-xl border-2 transition-all ${
-                  route === "ca-to-bd"
-                    ? "border-route-ca-bd bg-route-ca-bd/5"
-                    : "border-border hover:border-route-ca-bd/50"
-                }`}
+                className={`p-6 rounded-xl border-2 transition-all ${route === "ca-to-bd"
+                  ? "border-route-ca-bd bg-route-ca-bd/5"
+                  : "border-border hover:border-route-ca-bd/50"
+                  }`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-semibold text-lg">Canada to Bangladesh</span>
@@ -441,11 +459,15 @@ export default function CargoCourier() {
                   </div>
                   <div>
                     <Label>Phone *</Label>
-                    <Input
-                      type="tel"
-                      placeholder={route === "bd-to-ca" ? "+880 XXXX-XXXXXX" : "+1 XXX-XXX-XXXX"}
+                    <SmartPhoneInput
+                      placeholder={route === "bd-to-ca" ? "Enter phone number" : "Enter phone number"}
+                      defaultCountry={route === "bd-to-ca" ? "BD" : "CA"}
                       value={formData.senderPhone}
-                      onChange={(e) => setFormData({ ...formData, senderPhone: e.target.value })}
+                      onChange={(value) => {
+                        console.log("Sender Phone:", value);
+                        setFormData({ ...formData, senderPhone: value || "" });
+                      }}
+                      className="h-10"
                     />
                   </div>
                   <div className="sm:col-span-2">
@@ -482,11 +504,15 @@ export default function CargoCourier() {
                   </div>
                   <div>
                     <Label>Phone *</Label>
-                    <Input
-                      type="tel"
-                      placeholder={route === "bd-to-ca" ? "+1 XXX-XXX-XXXX" : "+880 XXXX-XXXXXX"}
+                    <SmartPhoneInput
+                      placeholder={route === "bd-to-ca" ? "Enter phone number" : "Enter phone number"}
+                      defaultCountry={route === "bd-to-ca" ? "CA" : "BD"}
                       value={formData.receiverPhone}
-                      onChange={(e) => setFormData({ ...formData, receiverPhone: e.target.value })}
+                      onChange={(value) => {
+                        console.log("Receiver Phone:", value);
+                        setFormData({ ...formData, receiverPhone: value || "" });
+                      }}
+                      className="h-10"
                     />
                   </div>
                   <div className="sm:col-span-2">
@@ -539,9 +565,9 @@ export default function CargoCourier() {
                 </div>
               </div>
 
-              <Button 
-                type="submit" 
-                size="lg" 
+              <Button
+                type="submit"
+                size="lg"
                 className="w-full bg-cta hover:bg-cta/90 text-cta-foreground"
                 disabled={isSubmitting}
               >
@@ -562,7 +588,7 @@ export default function CargoCourier() {
             <div className="lg:col-span-1">
               <div className="sticky top-24 bg-card rounded-xl border border-border p-6">
                 <h3 className="font-semibold mb-4">Price Estimate</h3>
-                
+
                 {weight > 0 ? (
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
@@ -601,7 +627,7 @@ export default function CargoCourier() {
                 ) : (
                   <p className="text-sm text-muted-foreground">Enter weight to see price estimate</p>
                 )}
-                
+
                 <p className="text-xs text-muted-foreground mt-4">
                   Final price confirmed after pickup inspection
                 </p>
@@ -621,12 +647,12 @@ export default function CargoCourier() {
                 What You Can Ship
               </h3>
               <div className="grid sm:grid-cols-2 gap-3">
-                {["📄 Documents & Papers", "🎁 Gifts & Personal Items", "👕 Clothing & Textiles", 
+                {["📄 Documents & Papers", "🎁 Gifts & Personal Items", "👕 Clothing & Textiles",
                   "📱 Electronics", "🍬 Non-perishable Food", "📚 Books & Media", "💼 Business Samples", "🛠️ Tools & Equipment"].map((item) => (
-                  <div key={item} className="flex items-center gap-2 text-sm bg-card p-3 rounded-lg">
-                    {item}
-                  </div>
-                ))}
+                    <div key={item} className="flex items-center gap-2 text-sm bg-card p-3 rounded-lg">
+                      {item}
+                    </div>
+                  ))}
               </div>
             </div>
             <div>
@@ -635,12 +661,12 @@ export default function CargoCourier() {
                 Prohibited Items
               </h3>
               <div className="grid sm:grid-cols-2 gap-3">
-                {["❌ Illegal substances", "❌ Weapons & explosives", "❌ Perishable foods", 
+                {["❌ Illegal substances", "❌ Weapons & explosives", "❌ Perishable foods",
                   "❌ Live animals", "❌ Hazardous materials", "❌ Liquids (unpackaged)", "❌ Counterfeit items"].map((item) => (
-                  <div key={item} className="flex items-center gap-2 text-sm bg-card p-3 rounded-lg text-muted-foreground">
-                    {item}
-                  </div>
-                ))}
+                    <div key={item} className="flex items-center gap-2 text-sm bg-card p-3 rounded-lg text-muted-foreground">
+                      {item}
+                    </div>
+                  ))}
               </div>
             </div>
           </div>

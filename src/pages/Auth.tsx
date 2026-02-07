@@ -35,7 +35,7 @@ export default function Auth() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Basic validation
     if (!email || !password) {
       toast({
@@ -182,17 +182,15 @@ export default function Auth() {
           <div className="flex bg-muted rounded-xl p-1 mb-6">
             <button
               onClick={() => setIsLogin(true)}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                isLogin ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-              }`}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${isLogin ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                }`}
             >
               Login
             </button>
             <button
               onClick={() => setIsLogin(false)}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                !isLogin ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-              }`}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${!isLogin ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                }`}
             >
               Register
             </button>
@@ -203,7 +201,7 @@ export default function Auth() {
               <div>
                 <Label className="text-sm font-medium">Full Name</Label>
                 <div className="relative mt-1.5">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
                   <Input
                     type="text"
                     placeholder="Your name"
@@ -265,7 +263,7 @@ export default function Auth() {
           {/* Quick Login Info */}
           <div className="mt-6 p-4 bg-muted/50 rounded-xl">
             <p className="text-xs text-center text-muted-foreground">
-              {isLogin 
+              {isLogin
                 ? "Don't have an account? Click the Register tab above"
                 : "You'll need to verify your email after registration"
               }
@@ -274,9 +272,13 @@ export default function Auth() {
         </div>
 
         {/* Back to Home */}
-        <div className="text-center mt-6">
+        <div className="text-center mt-6 space-x-4">
           <Link to="/" className="text-white/70 hover:text-white text-sm transition-colors">
             ← Back to Home
+          </Link>
+          <span className="text-white/30">|</span>
+          <Link to="/agent/login" className="text-white/70 hover:text-white text-sm transition-colors">
+            Agent Login →
           </Link>
         </div>
       </motion.div>

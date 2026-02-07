@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SmartPhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
@@ -13,7 +14,7 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading, updateProfile } = useProfile();
-  
+
   const [formData, setFormData] = useState({
     full_name: "",
     phone: "",
@@ -114,14 +115,12 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium">Phone Number</Label>
-                    <div className="relative mt-1.5">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                      <Input
-                        type="tel"
+                    <div className="mt-1.5">
+                      <SmartPhoneInput
                         value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        placeholder="+1 XXX-XXX-XXXX"
-                        className="pl-10 h-12 rounded-xl"
+                        onChange={(value) => setFormData({ ...formData, phone: value || "" })}
+                        placeholder="Enter phone number"
+                        className="h-12"
                       />
                     </div>
                   </div>
@@ -199,7 +198,7 @@ export default function ProfilePage() {
                   <User className="h-5 w-5 text-muted-foreground" />
                   <span className="text-muted-foreground">Account Created:</span>
                   <span className="font-medium">
-                    {profile?.created_at 
+                    {profile?.created_at
                       ? new Date(profile.created_at).toLocaleDateString("en-US")
                       : "-"
                     }

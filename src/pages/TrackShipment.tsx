@@ -7,6 +7,29 @@ import { Search, Package, Plane, CheckCircle, Clock, MapPin, Phone } from "lucid
 import { mockTrackingData, CargoTracking, FlightTracking } from "@/data/mockData";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+
+// Extending locally for now to match UI expectation with potential DB fields
+interface TrackingEvent {
+  status: string;
+  label: string;
+  date?: string;
+  location?: string;
+  description?: string;
+  completed: boolean;
+  current?: boolean;
+}
+
+const shipmentStatuses = [
+  "pending", "pickup_scheduled", "picked_up", "in_transit",
+  "customs", "out_for_delivery", "delivered"
+];
+
+const statusLabels: Record<string, string> = {
+  pending: "Pending", pickup_scheduled: "Pickup Scheduled", picked_up: "Picked Up",
+  in_transit: "In Transit", customs: "At Customs", out_for_delivery: "Out for Delivery",
+  delivered: "Delivered", cancelled: "Cancelled",
+};
 
 // Import 3D images
 import trackingPhone3D from "@/assets/tracking-phone-3d.png";
@@ -22,6 +45,7 @@ export default function TrackShipment() {
   const [trackingId, setTrackingId] = useState(initialId);
   const [result, setResult] = useState<CargoTracking | FlightTracking | null>(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (initialId) {
@@ -29,21 +53,150 @@ export default function TrackShipment() {
     }
   }, [initialId]);
 
-  const handleSearch = (id?: string) => {
+  // Real-time updates
+  useEffect(() => {
+    if (!result) return;
+    const table = result.type === 'cargo' ? 'shipments' : 'flight_bookings';
+    const idValue = result.type === 'cargo'
+      ? (result as CargoTracking).trackingId
+      : (result as FlightTracking).bookingRef;
+
+    const channel = supabase
+      .channel('public:' + table)
+      .on('postgres_changes', { event: '*', schema: 'public', table: table }, (payload) => {
+        const newData = payload.new as any;
+        if (newData && (newData.tracking_id === idValue || newData.booking_ref === idValue || (result.type === 'flight' && newData.pnr === (result as FlightTracking).pnr))) {
+          handleSearch(idValue);
+        }
+      })
+      .subscribe();
+
+    if (result.type === 'cargo') {
+      const timelineChannel = supabase
+        .channel('public:shipment_timeline')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'shipment_timeline' }, () => {
+          handleSearch(idValue);
+        })
+        .subscribe();
+      return () => { supabase.removeChannel(channel); supabase.removeChannel(timelineChannel); };
+    }
+    return () => { supabase.removeChannel(channel); };
+  }, [result]);
+
+  const handleSearch = async (id?: string) => {
     const searchId = (id || trackingId).trim().toUpperCase();
     setError("");
-    
+    setLoading(true);
+
     if (!searchId) {
       setError("Please enter a tracking ID");
+      setLoading(false);
       return;
     }
 
-    const data = mockTrackingData[searchId];
-    if (data) {
-      setResult(data);
-    } else {
+    try {
+      const { data: shipment } = await supabase
+        .from('shipments')
+        .select(`*, shipment_timeline (*)`)
+        .eq('tracking_id', searchId)
+        .maybeSingle();
+
+      if (shipment) {
+        // Build Timeline Logic
+        const fetchedTimeline = shipment.shipment_timeline || [];
+        const currentStatusIndex = shipmentStatuses.indexOf(shipment.status);
+
+        let fullTimeline: TrackingEvent[] = [];
+
+        if (shipment.status === 'cancelled') {
+          // Special Case: Just show what happened + Cancelled
+          fullTimeline = fetchedTimeline.map((t: any) => ({
+            status: t.status,
+            label: t.description || statusLabels[t.status] || t.status,
+            date: new Date(t.event_time).toLocaleString(),
+            location: t.location || '',
+            description: t.description,
+            completed: true,
+            current: t.is_current
+          }));
+        } else {
+          // Standard Flow
+          fullTimeline = shipmentStatuses.map((status, index) => {
+            const existingEvent = fetchedTimeline.find((t: any) => t.status === status);
+            const isCompleted = index <= currentStatusIndex;
+            const isCurrent = index === currentStatusIndex;
+
+            return {
+              status: status,
+              label: existingEvent?.description || statusLabels[status],
+              date: existingEvent ? new Date(existingEvent.event_time).toLocaleString() : undefined,
+              location: existingEvent?.location || '',
+              description: existingEvent?.description || (isCurrent ? 'In Progress' : 'Pending'),
+              completed: isCompleted,
+              current: isCurrent
+            };
+          });
+        }
+
+        setResult({
+          type: "cargo",
+          trackingId: shipment.tracking_id,
+          cargoType: shipment.cargo_type || "General",
+          weight: (shipment.weight || 0) + " kg",
+          packages: shipment.packages || 1,
+          from: shipment.from_city || "Origin",
+          to: shipment.to_city || "Destination",
+          bookedDate: new Date(shipment.created_at).toLocaleDateString(),
+          estimatedDelivery: shipment.estimated_delivery ? new Date(shipment.estimated_delivery).toLocaleDateString() : "Pending",
+          deliveredDate: shipment.actual_delivery ? new Date(shipment.actual_delivery).toLocaleDateString() : undefined,
+          sender: shipment.sender_name,
+          receiver: shipment.receiver_name,
+          contact: shipment.sender_phone,
+          amount: shipment.total_cost ? "$" + shipment.total_cost : "N/A",
+          currentStatus: shipment.status,
+          timeline: fullTimeline
+        } as CargoTracking);
+        setLoading(false);
+        return;
+      }
+
+      const { data: flight } = await supabase
+        .from('flight_bookings')
+        .select('*')
+        .or(`booking_ref.eq.${searchId},pnr.eq.${searchId}`)
+        .maybeSingle();
+
+      if (flight) {
+        setResult({
+          type: "flight",
+          bookingRef: flight.booking_ref,
+          pnr: flight.pnr || "N/A",
+          status: flight.status,
+          airline: flight.airline || "N/A",
+          flightNumber: flight.flight_number || "N/A",
+          from: flight.from_city,
+          to: flight.to_city,
+          departureDate: flight.departure_date,
+          departureTime: flight.departure_time || "",
+          arrivalDate: flight.arrival_date || "",
+          arrivalTime: flight.arrival_time || "",
+          duration: flight.duration || "",
+          stops: flight.stops ? `${flight.stops} stops` : "Direct",
+          class: flight.cabin_class,
+          passengers: Array((flight.adults || 0) + (flight.children || 0)).fill(0).map((_, i) => ({ name: `Passenger ${i + 1}`, ticketNo: "-" })),
+          totalAmount: flight.total_price ? "$" + flight.total_price : "N/A"
+        } as FlightTracking);
+        setLoading(false);
+        return;
+      }
+
+      setError("No shipment found with this tracking ID.");
       setResult(null);
-      setError("No shipment found with this tracking ID. Try: WC-SH-10245, WC-SH-20891, or WC-FL-30567");
+    } catch (err: any) {
+      console.error(err);
+      setError("An error occurred while searching.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -89,7 +242,7 @@ export default function TrackShipment() {
           animate={{ x: [0, -10, 0] }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
         />
-        
+
         <div className="container-wacc relative">
           <div className="flex items-center gap-2 text-primary-foreground/70 text-sm mb-4">
             <Link to="/" className="hover:text-primary-foreground">Home</Link>
@@ -112,7 +265,7 @@ export default function TrackShipment() {
           animate={{ y: [0, -15, 0], rotate: [0, 5, 0] }}
           transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
         />
-        
+
         <div className="container-wacc">
           {/* Search Box */}
           <div className="max-w-2xl mx-auto mb-12">
@@ -129,7 +282,7 @@ export default function TrackShipment() {
                 animate={{ rotate: [0, 5, 0] }}
                 transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
               />
-              
+
               <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="flex flex-col sm:flex-row gap-3 relative">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -143,11 +296,11 @@ export default function TrackShipment() {
                 </div>
                 <Button type="submit" size="lg" className="h-12">Track Now</Button>
               </form>
-              
+
               {error && (
                 <p className="text-sm text-destructive mt-3">{error}</p>
               )}
-              
+
               <div className="mt-4 text-center relative">
                 <p className="text-sm text-muted-foreground mb-2">Try sample IDs:</p>
                 <div className="flex flex-wrap justify-center gap-2">
@@ -170,7 +323,7 @@ export default function TrackShipment() {
           {result && result.type === "cargo" && (
             <CargoTrackingResult data={result as CargoTracking} />
           )}
-          
+
           {result && result.type === "flight" && (
             <FlightTrackingResult data={result as FlightTracking} />
           )}
@@ -186,7 +339,7 @@ export default function TrackShipment() {
           animate={{ x: [0, 20, 0] }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
         />
-        
+
         <div className="container-wacc text-center relative">
           <h2 className="text-xl font-semibold mb-4">Need Help With Your Shipment?</h2>
           <div className="flex flex-wrap justify-center gap-4">
@@ -230,7 +383,7 @@ function CargoTrackingResult({ data }: { data: CargoTracking }) {
           animate={{ rotate: [0, 5, 0] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
         />
-        
+
         <div className="flex items-center gap-3 mb-2 relative">
           {isDelivered ? (
             <CheckCircle className="h-8 w-8" />
@@ -242,7 +395,7 @@ function CargoTrackingResult({ data }: { data: CargoTracking }) {
           </span>
         </div>
         <p className="text-white/80 relative">
-          {isDelivered 
+          {isDelivered
             ? `Delivered on ${data.deliveredDate}`
             : `Estimated delivery: ${data.estimatedDelivery}`
           }
@@ -357,7 +510,7 @@ function FlightTrackingResult({ data }: { data: FlightTracking }) {
           animate={{ y: [0, -8, 0], rotate: [0, 5, 0] }}
           transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
         />
-        
+
         <div className="flex items-center gap-3 mb-2 relative">
           <CheckCircle className="h-8 w-8" />
           <span className="text-2xl font-bold">Flight {data.status}</span>

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SmartPhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -163,7 +164,7 @@ export default function GetQuote() {
           animate={{ y: [0, 8, 0], rotate: [0, -3, 0] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
         />
-        
+
         <div className="container-wacc relative">
           <div className="flex items-center gap-2 text-primary-foreground/70 text-sm mb-4">
             <Link to="/" className="hover:text-primary-foreground">Home</Link>
@@ -186,7 +187,7 @@ export default function GetQuote() {
           animate={{ y: [0, -10, 0] }}
           transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
         />
-        
+
         <div className="container-wacc">
           <div className="max-w-3xl mx-auto">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -254,11 +255,12 @@ export default function GetQuote() {
                       </div>
                       <div>
                         <Label>Phone *</Label>
-                        <Input
-                          type="tel"
+                        <SmartPhoneInput
+                          placeholder="Enter phone number"
+                          defaultCountry="CA"
                           value={cargoFormData.phone}
-                          onChange={(e) => setCargoFormData({ ...cargoFormData, phone: e.target.value })}
-                          placeholder="+1 XXX-XXX-XXXX"
+                          onChange={(value) => setCargoFormData({ ...cargoFormData, phone: value || "" })}
+                          className="h-10"
                         />
                       </div>
                       <div className="sm:col-span-2">
@@ -367,11 +369,12 @@ export default function GetQuote() {
                       </div>
                       <div>
                         <Label>Phone *</Label>
-                        <Input
-                          type="tel"
+                        <SmartPhoneInput
+                          placeholder="Enter phone number"
+                          defaultCountry="CA"
                           value={flightFormData.phone}
-                          onChange={(e) => setFlightFormData({ ...flightFormData, phone: e.target.value })}
-                          placeholder="+1 XXX-XXX-XXXX"
+                          onChange={(value) => setFlightFormData({ ...flightFormData, phone: value || "" })}
+                          className="h-10"
                         />
                       </div>
                       <div className="sm:col-span-2">
@@ -389,7 +392,7 @@ export default function GetQuote() {
                   {/* Flight Details */}
                   <div className="bg-card rounded-xl border border-border p-6">
                     <h3 className="font-semibold mb-4">Flight Details</h3>
-                    
+
                     <RadioGroup value={flightFormData.tripType} onValueChange={(v) => setFlightFormData({ ...flightFormData, tripType: v })} className="flex gap-6 mb-4">
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="one-way" id="q-one-way" />

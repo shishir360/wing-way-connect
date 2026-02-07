@@ -41,18 +41,18 @@ export default function AgentDashboard() {
   }
 
   const statCards = [
-    { icon: Package, value: stats.assigned, label: "অ্যাসাইনড শিপমেন্ট", color: "text-blue-500", bg: "bg-blue-500/10" },
-    { icon: ScanLine, value: stats.scanned, label: "মোট স্ক্যান", color: "text-purple-500", bg: "bg-purple-500/10" },
-    { icon: CheckCircle, value: stats.delivered, label: "ডেলিভারি সম্পন্ন", color: "text-green-500", bg: "bg-green-500/10" },
+    { icon: Package, value: stats.assigned, label: "Assigned Shipments", color: "text-blue-500", bg: "bg-blue-500/10" },
+    { icon: ScanLine, value: stats.scanned, label: "Total Scans", color: "text-purple-500", bg: "bg-purple-500/10" },
+    { icon: CheckCircle, value: stats.delivered, label: "Delivered", color: "text-green-500", bg: "bg-green-500/10" },
   ];
 
   const scanTypeLabels: Record<string, string> = {
-    pickup: "পিকআপ", handover: "হ্যান্ডওভার", delivery: "ডেলিভারি", checkpoint: "চেকপয়েন্ট"
+    pickup: "Pickup", handover: "Handover", delivery: "Delivery", checkpoint: "Checkpoint"
   };
 
   return (
     <div>
-      <h1 className="text-2xl sm:text-3xl font-bold font-display mb-6">এজেন্ট ড্যাশবোর্ড</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold font-display mb-6">Agent Dashboard</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {statCards.map((stat, i) => {
@@ -69,17 +69,17 @@ export default function AgentDashboard() {
         })}
       </div>
 
-      <h2 className="text-xl font-bold font-display mb-4">সাম্প্রতিক স্ক্যান</h2>
+      <h2 className="text-xl font-bold font-display mb-4">Recent Scans</h2>
       {recentScans.length > 0 ? (
         <div className="bg-card rounded-2xl border border-border/50 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/50 text-left text-muted-foreground">
-                  <th className="p-4">ট্র্যাকিং ID</th>
-                  <th className="p-4">ধরন</th>
-                  <th className="p-4">লোকেশন</th>
-                  <th className="p-4">সময়</th>
+                  <th className="p-4">Tracking ID</th>
+                  <th className="p-4">Type</th>
+                  <th className="p-4">Location</th>
+                  <th className="p-4">Time</th>
                 </tr>
               </thead>
               <tbody>
@@ -88,7 +88,7 @@ export default function AgentDashboard() {
                     <td className="p-4 font-medium text-primary">{(scan.shipments as any)?.tracking_id || '-'}</td>
                     <td className="p-4">{scanTypeLabels[scan.scan_type] || scan.scan_type}</td>
                     <td className="p-4">{scan.location || '-'}</td>
-                    <td className="p-4 text-muted-foreground">{new Date(scan.scanned_at).toLocaleString('bn-BD')}</td>
+                    <td className="p-4 text-muted-foreground">{new Date(scan.scanned_at).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -98,7 +98,7 @@ export default function AgentDashboard() {
       ) : (
         <div className="bg-card rounded-xl border border-border/50 p-8 text-center text-muted-foreground">
           <Clock className="h-12 w-12 mx-auto mb-3 opacity-50" />
-          <p>এখনও কোনো স্ক্যান নেই</p>
+          <p>No scans yet</p>
         </div>
       )}
     </div>
