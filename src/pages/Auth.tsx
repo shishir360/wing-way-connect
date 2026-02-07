@@ -22,16 +22,18 @@ export default function Auth() {
   const [fullName, setFullName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp, user, role } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user) {
-      navigate("/dashboard");
+    if (user && role) {
+      if (role === 'admin') navigate("/admin");
+      else if (role === 'agent') navigate("/agent");
+      else navigate("/dashboard");
     }
-  }, [user, navigate]);
+  }, [user, role, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,7 +87,7 @@ export default function Auth() {
             title: "Welcome!",
             description: "Successfully logged in",
           });
-          navigate("/dashboard");
+          // Navigation handled by useEffect when user/role updates
         }
       } else {
         const { error } = await signUp(email, password, fullName);
@@ -111,6 +113,7 @@ export default function Auth() {
         }
       }
     } catch (err) {
+      console.error(err);
       toast({
         title: "Something went wrong",
         description: "Please try again later",
