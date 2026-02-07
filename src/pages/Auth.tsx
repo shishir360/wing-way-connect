@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Plane, Mail, Lock, User, ArrowRight, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Plane, Mail, Lock, User, ArrowRight, Loader2, Shield } from "lucide-react";
 
 // Import 3D images
 import airplane3D from "@/assets/airplane-3d.png";
@@ -19,7 +20,11 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [adminCode, setAdminCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // The admin signup code - change this to your desired secret
+  const ADMIN_CODE = "WACC-ADMIN-2026";
   const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -102,10 +107,35 @@ export default function Auth() {
             });
           }
         } else {
-          toast({
-            title: "Registration successful!",
-            description: "Please check your email to verify your account",
-          });
+          // If admin code was entered, assign admin role after signup
+          if (adminCode === ADMIN_CODE) {
+            // Wait briefly for the user to be created
+            const { data: { user: newUser } } = await supabase.auth.getUser();
+            if (newUser) {
+              // Use service role via edge function would be better, but for initial setup
+              // we insert directly (the user won't have admin policy yet, so this relies on
+              // the signup trigger creating the profile first)
+              const { error: roleError } = await supabase
+                .from('user_roles')
+                .insert({ user_id: newUser.id, role: 'admin' as any });
+              if (!roleError) {
+                toast({
+                  title: "Admin Registration Successful! 🎉",
+                  description: "Please check your email to verify, then login as admin.",
+                });
+              } else {
+                toast({
+                  title: "Registration successful!",
+                  description: "Please check your email. Admin role may need manual assignment.",
+                });
+              }
+            }
+          } else {
+            toast({
+              title: "Registration successful!",
+              description: "Please check your email to verify your account",
+            });
+          }
         }
       }
     } catch (err) {
@@ -198,19 +228,35 @@ export default function Auth() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
-              <div>
-                <Label className="text-sm font-medium">Full Name</Label>
-                <div className="relative mt-1.5">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Your name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="pl-10 h-12 rounded-xl bg-muted/50"
-                  />
+              <>
+                <div>
+                  <Label className="text-sm font-medium">Full Name</Label>
+                  <div className="relative mt-1.5">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Your name"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="pl-10 h-12 rounded-xl bg-muted/50"
+                    />
+                  </div>
                 </div>
-              </div>
+                <div>
+                  <Label className="text-sm font-medium">Admin Code (optional)</Label>
+                  <div className="relative mt-1.5">
+                    <Shield className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Enter admin code if you have one"
+                      value={adminCode}
+                      onChange={(e) => setAdminCode(e.target.value)}
+                      className="pl-10 h-12 rounded-xl bg-muted/50"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Leave empty for regular account</p>
+                </div>
+              </>
             )}
 
             <div>

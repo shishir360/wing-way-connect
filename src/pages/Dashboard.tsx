@@ -6,11 +6,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useShipments } from "@/hooks/useShipments";
 import { useFlightBookings } from "@/hooks/useFlightBookings";
+import { useAdmin } from "@/hooks/useAdmin";
 import { motion } from "framer-motion";
 import { 
   Package, Plane, MapPin, Clock, CheckCircle, AlertCircle, 
   User, Settings, ArrowRight, TrendingUp, Calendar, LogOut,
-  Truck, Box
+  Truck, Box, Shield
 } from "lucide-react";
 
 // Import 3D images
@@ -38,6 +39,7 @@ export default function Dashboard() {
   const { profile, loading: profileLoading } = useProfile();
   const { shipments, activeShipments, deliveredShipments, loading: shipmentsLoading } = useShipments();
   const { bookings, upcomingFlights, loading: bookingsLoading } = useFlightBookings();
+  const { isAdmin } = useAdmin();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -119,7 +121,18 @@ export default function Dashboard() {
               </h1>
               <p className="text-primary-foreground/70 mt-1">Your Dashboard</p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  onClick={() => navigate("/admin")}
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  Admin Panel
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
