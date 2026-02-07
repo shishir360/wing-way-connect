@@ -33,22 +33,74 @@ export default function AdminLayout() {
   const { isAdmin, loading: adminLoading } = useAdmin();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  // Debug State
+  const [showDebug, setShowDebug] = useState(false);
+
   useEffect(() => {
+    const timer = setTimeout(() => {
+      if (authLoading || adminLoading) {
+        setShowDebug(true);
+      }
+    }, 3000); // Show debug after 3 seconds of loading
+    return () => clearTimeout(timer);
+  }, [authLoading, adminLoading]);
+
+  // Force Unlock (Emergency Bypass)
+  const forceUnlock = () => {
+    // This is a client-side bypass only for debugging. 
+    // Real RLS will still block data if permissions are missing.
+    if (confirm("Forcing entry... If data is missing, backend permissions are blocked.")) {
+      setIsSidebarOpen(false); // Just to trigger a re-render or state change if needed
+      // Actually, we can't 'force' the hooks to stop loading, but we can render the content anyway via a state override
+      // But better yet, let's just create a local override
+      window.location.href = "/admin?forced=true";
+    }
+  };
+
+  useEffect(() => {
+    // Check for force override
+    if (new URLSearchParams(window.location.search).get('forced') === 'true') {
+      // We can't easily override hook state, but we can skip the redirect logic
+    }
+
     if (!authLoading && !adminLoading) {
       if (!user) {
         navigate("/admin/login");
       } else if (!isAdmin) {
-        navigate("/dashboard"); // Redirect regular users to their dashboard
+        // Allow bypass if forced
+        if (new URLSearchParams(window.location.search).get('forced') !== 'true') {
+          navigate("/dashboard");
+        }
       }
     }
   }, [user, authLoading, adminLoading, isAdmin, navigate]);
 
   if (authLoading || adminLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
+    if (new URLSearchParams(window.location.search).get('forced') === 'true') {
+      // Fallthrough to render content
+    } else {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 text-center">
+          <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full mb-4" />
+          <p className="text-muted-foreground animate-pulse">Loading Admin Panel...</p>
+
+          {showDebug && (
+            <div className="mt-8 p-4 bg-muted/50 rounded-xl max-w-md w-full border border-destructive/20">
+              <h3 className="text-red-500 font-bold mb-2">⚠️ Taking too long?</h3>
+              <div className="text-left text-xs font-mono space-y-1 mb-4 bg-card p-2 rounded">
+                <p>Auth Loading: {authLoading ? 'YES' : 'NO'}</p>
+                <p>Admin Loading: {adminLoading ? 'YES' : 'NO'}</p>
+                <p>User Found: {user ? 'YES' : 'NO'}</p>
+                <p>User Email: {user?.email || 'None'}</p>
+              </div>
+              <Button variant="destructive" size="sm" onClick={forceUnlock} className="w-full">
+                Force Enter (Debug Mode)
+              </Button>
+            </div>
+          )}
+        </div>
+      );
+    }
   }
 
   const handleSignOut = async () => {
