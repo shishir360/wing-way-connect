@@ -48,6 +48,24 @@ export function useShipments() {
     }
   }, [user]);
 
+  // Real-time subscription for auto-refresh
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel('user-shipments-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'shipments',
+        filter: `user_id=eq.${user.id}`,
+      }, () => {
+        fetchShipments();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
   const fetchShipments = async () => {
     if (!user) return;
 

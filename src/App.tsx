@@ -19,6 +19,11 @@ import Refund from "./pages/Refund";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import ProfilePage from "./pages/ProfilePage";
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminOverview from "./pages/admin/AdminOverview";
+import AdminShipments from "./pages/admin/AdminShipments";
+import AdminBookings from "./pages/admin/AdminBookings";
+import AdminUsers from "./pages/admin/AdminUsers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +51,12 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dashboard/profile" element={<ProfilePage />} />
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminOverview />} />
+              <Route path="shipments" element={<AdminShipments />} />
+              <Route path="bookings" element={<AdminBookings />} />
+              <Route path="users" element={<AdminUsers />} />
+            </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
