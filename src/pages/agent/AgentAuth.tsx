@@ -52,7 +52,7 @@ export default function AgentAuth() {
     }
   }, [user, isAgent, isApproved, agentLoading, navigate]);
 
-  const handleSendOtp = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password || !fullName || !phone) {
       toast({ title: "Please fill all fields", variant: "destructive" });
@@ -61,65 +61,13 @@ export default function AgentAuth() {
 
     setIsLoading(true);
     try {
-      // Call Edge Function to send OTP
+      // Call Edge Function to create user instantly
       const { data, error } = await supabase.functions.invoke('agent-email-verification', {
         body: {
-          action: 'send',
+          action: 'instant',
           email,
           fullName,
           phone,
-          role: 'agent'
-        }
-      });
-
-      if (error) {
-        console.error("Edge Function Invoke Error:", error);
-        let errorMessage = error.message;
-        try {
-          if ('context' in error) {
-            const context = (error as any).context;
-            if (context && typeof context.json === 'function') {
-              const json = await context.json();
-              if (json && json.error) errorMessage = json.error;
-            }
-          }
-        } catch (e) {
-          console.error("Failed to parse error JSON:", e);
-        }
-        throw new Error(errorMessage);
-      }
-      if (data.error) throw new Error(data.error);
-
-      toast({
-        title: "Verification Code Sent",
-        description: "Please check your email for the 6-digit code.",
-        className: "bg-blue-500 text-white border-blue-600"
-      });
-      setStep('otp');
-
-    } catch (err: any) {
-      console.error("OTP Send error:", err);
-      toast({ title: "Failed to send code", description: err.message, variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otpCode || otpCode.length < 6) {
-      toast({ title: "Invalid Code", description: "Please enter the 6-digit code.", variant: "destructive" });
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // Call Edge Function to verify OTP and create user
-      const { data, error } = await supabase.functions.invoke('agent-email-verification', {
-        body: {
-          action: 'verify',
-          email,
-          code: otpCode,
           password,
           role: 'agent'
         }
@@ -127,23 +75,11 @@ export default function AgentAuth() {
 
       if (error) {
         console.error("Edge Function Invoke Error:", error);
-        let errorMessage = error.message;
-        try {
-          if ('context' in error) {
-            const context = (error as any).context;
-            if (context && typeof context.json === 'function') {
-              const json = await context.json();
-              if (json && json.error) errorMessage = json.error;
-            }
-          }
-        } catch (e) {
-          console.error("Failed to parse error JSON:", e);
-        }
-        throw new Error(errorMessage);
+        throw new Error(error.message || "Signup failed");
       }
       if (data.error) throw new Error(data.error);
 
-      toast({ title: "Verified Successfully!", description: "Logging you in..." });
+      toast({ title: "Account Created!", description: "Logging you in..." });
 
       // Auto Login
       const { error: loginError } = await signIn(email, password);
@@ -153,8 +89,8 @@ export default function AgentAuth() {
       // Navigation will happen via useEffect when user state updates
 
     } catch (err: any) {
-      console.error("Verification error:", err);
-      toast({ title: "Verification Failed", description: err.message, variant: "destructive" });
+      console.error("Signup error:", err);
+      toast({ title: "Signup Failed", description: err.message, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -264,28 +200,8 @@ export default function AgentAuth() {
             </p>
           </div>
 
-          <form onSubmit={isSignUp ? (step === 'otp' ? handleVerifyOtp : handleSendOtp) : handleSignIn} className="space-y-4">
-            {isSignUp && step === 'otp' ? (
-              // OTP Step
-              <div>
-                <Label className="text-sm font-medium">Verification Code</Label>
-                <div className="relative mt-1.5">
-                  <Input
-                    placeholder="123456"
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value)}
-                    className="pl-4 h-12 rounded-xl bg-muted/50 text-center text-lg tracking-widest"
-                    maxLength={6}
-                    required
-                  />
-                </div>
-                <div className="text-center mt-2">
-                  <Button variant="link" size="sm" onClick={() => setStep('details')} className="text-xs text-muted-foreground">
-                    Wrong email? Go back
-                  </Button>
-                </div>
-              </div>
-            ) : isSignUp && (
+          <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-4">
+            {isSignUp && (
               // Sign Up Details Step
               <>
                 <div>
@@ -365,7 +281,7 @@ export default function AgentAuth() {
 
             <Button type="submit" disabled={isLoading} className="w-full h-12 rounded-xl text-base bg-cta hover:bg-cta/90 text-cta-foreground shadow-lg">
               {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> :
-                <>{isSignUp ? (step === 'otp' ? "Verify & Create Account" : "Sign Up Now") : "Login"} <ArrowRight className="h-5 w-5 ml-2" /></>
+                <>{isSignUp ? "Create Account" : "Login"} <ArrowRight className="h-5 w-5 ml-2" /></>
               }
             </Button>
           </form>
@@ -374,14 +290,14 @@ export default function AgentAuth() {
             {isSignUp ? (
               <p className="text-sm text-muted-foreground">
                 Already have an account?{" "}
-                <button type="button" onClick={() => { setIsSignUp(false); setStep('details'); }} className="text-primary hover:underline font-semibold">
+                <button type="button" onClick={() => setIsSignUp(false)} className="text-primary hover:underline font-semibold">
                   Sign In
                 </button>
               </p>
             ) : (
               <p className="text-sm text-muted-foreground">
                 Don't have an agent account?{" "}
-                <button type="button" onClick={() => { setIsSignUp(true); setStep('details'); }} className="text-primary hover:underline font-semibold">
+                <button type="button" onClick={() => setIsSignUp(true)} className="text-primary hover:underline font-semibold">
                   Join Now
                 </button>
               </p>

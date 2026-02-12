@@ -10,7 +10,7 @@ const corsHeaders = {
 };
 
 interface RequestData {
-    action: "send" | "verify";
+    action: "send" | "verify" | "instant";
     email: string;
     code?: string;
     fullName?: string;
@@ -113,78 +113,55 @@ const handler = async (req: Request): Promise<Response> => {
                 { headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
 
-        } else if (action === "verify") {
-            if (!email || !code || !password) {
-                throw new Error("Missing verification details");
-            }
-
-            // 1. Verify Code
-            const { data: record, error: fetchError } = await supabaseClient
-                .from("verification_codes")
-                .select("*")
-                .eq("email", email)
-                .eq("code", code)
-                .eq("type", type) // Use dynamic type
-                .single();
-
-            if (fetchError || !record) {
-                throw new Error("Invalid or expired verification code.");
-            }
-
-            if (new Date(record.expires_at) < new Date()) {
-                throw new Error("Verification code has expired.");
-            }
-
-            // 2. Create User (Confirmed)
-            const metadata = record.metadata || {};
-
-            // Check if user already exists in auth.users (faster check)
-            const { data: userData } = await supabaseClient.auth.admin.getUserByEmail(email);
-            if (userData?.user) {
-                throw new Error("This email is already registered. Please try logging in instead.");
-            }
-
-            const { data: newUser, error: createError } = await supabaseClient.auth.admin.createUser({
-                email,
-                password,
-                email_confirm: true,
-                user_metadata: {
-                    full_name: metadata.fullName,
-                    phone: metadata.phone,
-                    role: metadata.role
-                }
-            });
-
-            if (createError) {
-                console.error("User Creation Error:", createError);
-                throw new Error(createError.message || "Failed to create user account.");
-            }
-
-            // 3. Cleanup Code
-            await supabaseClient.from("verification_codes").delete().eq("id", record.id);
-
-            // 4. Return success
-            return new Response(
-                JSON.stringify({ success: true, message: "Account verified and created successfully.", userId: newUser.user.id }),
-                { headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
-        }
+        } else if (action === "instant") {
+    if (!email || !password || !fullName || !phone) {
+        throw new Error("Missing details for account creation");
+    }
 
-        throw new Error("Invalid action");
+    // Create User immediately
+    const { data: newUser, error: createError } = await supabaseClient.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+            full_name: fullName,
+            phone: phone,
+            role: role
+        }
+    });
+
+    if (createError) {
+        console.error("User Creation Error:", createError);
+        // Check if user already exists
+        if (createError.message.toLowerCase().includes("already registered") ||
+            createError.message.toLowerCase().includes("email address is already associated")) {
+            throw new Error("This email is already registered. Please try logging in instead.");
+        }
+        throw new Error(createError.message || "Failed to create user account.");
+    }
+
+    return new Response(
+        JSON.stringify({ success: true, message: "Account created successfully.", userId: newUser.user.id }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+}
+
+throw new Error("Invalid action");
 
     } catch (error: any) {
-        console.error("Error in Edge Function:", error);
-        return new Response(
-            JSON.stringify({
-                error: error.message || "An unexpected error occurred",
-                details: error.details || null
-            }),
-            {
-                status: 400,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-            }
-        );
-    }
+    console.error("Error in Edge Function:", error);
+    return new Response(
+        JSON.stringify({
+            error: error.message || "An unexpected error occurred",
+            details: error.details || null
+        }),
+        {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+    );
+}
 };
 
 serve(handler);
