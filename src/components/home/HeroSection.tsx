@@ -156,7 +156,7 @@ export default function HeroSection() {
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
   return (
-    <section ref={sectionRef} className="relative overflow-hidden min-h-[90vh] sm:min-h-[85vh] flex items-center">
+    <section ref={sectionRef} className="relative overflow-hidden min-h-[95vh] sm:min-h-[85vh] flex items-center py-10 sm:py-0">
       {/* Premium gradient background */}
       <div className="absolute inset-0 bg-hero-pattern" />
 
@@ -261,7 +261,7 @@ export default function HeroSection() {
         />
       </motion.div>
 
-      <div className="container-wacc relative py-16 sm:py-20 lg:py-28 z-20">
+      <div className="container-wacc relative py-12 sm:py-20 lg:py-28 z-20">
         <motion.div
           initial="initial"
           animate="animate"
@@ -271,21 +271,21 @@ export default function HeroSection() {
           {/* Trust badge */}
           <motion.div
             variants={fadeInUp}
-            className="inline-flex items-center gap-3 rounded-full bg-white/10 backdrop-blur-md px-5 py-2.5 text-sm font-medium text-white mb-8 border border-white/10 shadow-lg"
+            className="inline-flex items-center gap-2 sm:gap-3 rounded-full bg-white/10 backdrop-blur-md px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-medium text-white mb-6 sm:mb-8 border border-white/10 shadow-lg"
           >
-            <div className="flex items-center gap-2">
-              <img src={bdFlag3D} alt="BD" className="h-6 w-auto drop-shadow-sm" />
-              <Plane className="h-4 w-4 text-cta animate-plane-fly" />
-              <img src={caFlag3D} alt="Canada" className="h-6 w-auto drop-shadow-sm" />
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <img src={bdFlag3D} alt="BD" className="h-5 sm:h-6 w-auto drop-shadow-sm" />
+              <Plane className="h-3.5 w-3.5 text-cta animate-plane-fly" />
+              <img src={caFlag3D} alt="Canada" className="h-5 sm:h-6 w-auto drop-shadow-sm" />
             </div>
             <span className="h-4 w-px bg-white/20" />
-            <span className="text-white/90">Safe • Trusted • Affordable</span>
+            <span className="text-white/90">Safe • Trusted • Low Cost</span>
           </motion.div>
 
           {/* Main heading */}
           <motion.h1
             variants={fadeInUp}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-display-lg font-display font-bold tracking-tight text-white mb-6"
+            className="text-3xl sm:text-5xl md:text-6xl lg:text-display-lg font-display font-bold tracking-tight text-white mb-4 sm:mb-6"
           >
             <span className="block">Bangladesh - Canada</span>
             <span className="block mt-1 sm:mt-2">
@@ -295,43 +295,43 @@ export default function HeroSection() {
 
           <motion.p
             variants={fadeInUp}
-            className="text-lg sm:text-xl md:text-2xl text-white/80 mb-10 max-w-2xl mx-auto leading-relaxed"
+            className="text-base sm:text-xl md:text-2xl text-white/80 mb-8 sm:mb-10 max-w-2xl mx-auto leading-relaxed px-4 sm:px-0"
           >
             Premium Cargo, Courier & Air Ticket Services
             <br className="hidden sm:block" />
-            <span className="text-white/60">Connecting loved ones across the globe</span>
+            <span className="text-white/60"> Connecting loved ones across the globe</span>
           </motion.p>
 
           {/* Visual flags with airplane */}
           <motion.div
             variants={fadeInUp}
-            className="flex items-center justify-center gap-8 sm:gap-14 mb-14"
+            className="flex items-center justify-center gap-4 sm:gap-14 mb-10 sm:mb-14"
           >
             <div className="flex flex-col items-center group cursor-pointer hover:scale-110 transition-transform duration-300">
               <div className="relative">
-                <img src={bdFlag3D} alt="Bangladesh Flag" className="h-24 sm:h-32 w-auto filter drop-shadow-2xl animate-float" />
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-20 h-2 bg-black/30 rounded-full blur-md" />
+                <img src={bdFlag3D} alt="Bangladesh Flag" className="h-16 sm:h-32 w-auto filter drop-shadow-2xl animate-float" />
+                <div className="absolute -bottom-1 sm:-bottom-2 left-1/2 -translate-x-1/2 w-12 sm:w-20 h-1 sm:h-2 bg-black/30 rounded-full blur-md" />
               </div>
-              <span className="text-base sm:text-lg mt-4 text-white font-bold tracking-wide">Bangladesh</span>
+              <span className="text-xs sm:text-lg mt-2 sm:mt-4 text-white font-bold tracking-wide">Bangladesh</span>
             </div>
 
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="w-12 sm:w-24 h-0.5 bg-gradient-to-r from-transparent via-white/50 to-white/50" />
+            <div className="flex items-center gap-2 sm:gap-4">
+              <div className="w-8 sm:w-24 h-0.5 bg-gradient-to-r from-transparent via-white/50 to-white/50" />
               <div className="relative">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-2xl shadow-primary/20">
-                  <Plane className="h-8 w-8 sm:h-10 sm:w-10 text-white animate-pulse-gentle" />
+                <div className="w-12 h-12 sm:w-20 sm:h-20 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-2xl shadow-primary/20">
+                  <Plane className="h-6 w-6 sm:h-10 sm:w-10 text-white animate-pulse-gentle" />
                 </div>
                 <div className="absolute inset-0 rounded-full animate-pulse-glow" />
               </div>
-              <div className="w-12 sm:w-24 h-0.5 bg-gradient-to-r from-white/50 via-white/50 to-transparent" />
+              <div className="w-8 sm:w-24 h-0.5 bg-gradient-to-r from-white/50 via-white/50 to-transparent" />
             </div>
 
             <div className="flex flex-col items-center group cursor-pointer hover:scale-110 transition-transform duration-300">
               <div className="relative">
-                <img src={caFlag3D} alt="Canada Flag" className="h-24 sm:h-32 w-auto filter drop-shadow-2xl animate-float-delayed" />
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-20 h-2 bg-black/30 rounded-full blur-md" />
+                <img src={caFlag3D} alt="Canada Flag" className="h-16 sm:h-32 w-auto filter drop-shadow-2xl animate-float-delayed" />
+                <div className="absolute -bottom-1 sm:-bottom-2 left-1/2 -translate-x-1/2 w-12 sm:w-20 h-1 sm:h-2 bg-black/30 rounded-full blur-md" />
               </div>
-              <span className="text-base sm:text-lg mt-4 text-white font-bold tracking-wide">Canada</span>
+              <span className="text-xs sm:text-lg mt-2 sm:mt-4 text-white font-bold tracking-wide">Canada</span>
             </div>
           </motion.div>
 
@@ -341,13 +341,13 @@ export default function HeroSection() {
             className="grid sm:grid-cols-2 gap-5 max-w-2xl mx-auto mb-12"
           >
             <Link to="/cargo-courier?route=bd-to-ca" className="group">
-              <div className="relative bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-5 sm:p-6 transition-all duration-500 hover:-translate-y-2 hover:bg-white/15 hover:border-cta/50 hover:shadow-2xl overflow-hidden group-hover:scale-[1.02]">
+              <div className="relative bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-4 sm:p-6 transition-all duration-500 hover:-translate-y-2 hover:bg-white/15 hover:border-cta/50 hover:shadow-2xl overflow-hidden group-hover:scale-[1.02]">
                 <div className="absolute inset-0 bg-gradient-to-br from-cta/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="relative">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-lg sm:text-xl font-bold text-white">From Bangladesh</span>
-                    <div className="w-10 h-10 rounded-full bg-cta/20 flex items-center justify-center border border-cta/30">
-                      <ArrowRight className="h-5 w-5 text-cta group-hover:translate-x-1 transition-transform" />
+                  <div className="flex items-center justify-between mb-3 sm:mb-4">
+                    <span className="text-base sm:text-xl font-bold text-white">From Bangladesh</span>
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cta/20 flex items-center justify-center border border-cta/30">
+                      <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 text-cta group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -363,13 +363,13 @@ export default function HeroSection() {
             </Link>
 
             <Link to="/cargo-courier?route=ca-to-bd" className="group">
-              <div className="relative bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-5 sm:p-6 transition-all duration-500 hover:-translate-y-2 hover:bg-white/15 hover:border-cta/50 hover:shadow-2xl overflow-hidden group-hover:scale-[1.02]">
+              <div className="relative bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-4 sm:p-6 transition-all duration-500 hover:-translate-y-2 hover:bg-white/15 hover:border-cta/50 hover:shadow-2xl overflow-hidden group-hover:scale-[1.02]">
                 <div className="absolute inset-0 bg-gradient-to-br from-cta/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="relative">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-lg sm:text-xl font-bold text-white">From Canada</span>
-                    <div className="w-10 h-10 rounded-full bg-cta/20 flex items-center justify-center border border-cta/30">
-                      <ArrowRight className="h-5 w-5 text-cta group-hover:translate-x-1 transition-transform" />
+                  <div className="flex items-center justify-between mb-3 sm:mb-4">
+                    <span className="text-base sm:text-xl font-bold text-white">From Canada</span>
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cta/20 flex items-center justify-center border border-cta/30">
+                      <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 text-cta group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -423,7 +423,7 @@ export default function HeroSection() {
           transition={{ delay: 0.6, duration: 0.6 }}
           className="mt-16 sm:mt-20"
         >
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 max-w-4xl mx-auto">
             {stats.map((stat, index) => {
               const Icon = stat.icon;
               return (
@@ -431,10 +431,10 @@ export default function HeroSection() {
                   key={stat.label}
                   className="relative group"
                 >
-                  <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 text-center">
+                  <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-3 sm:p-6 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 text-center">
                     <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-cta mx-auto mb-2" />
-                    <div className="text-2xl sm:text-3xl font-bold text-white mb-1">{stat.value}</div>
-                    <div className="text-xs sm:text-sm text-white/60">{stat.label}</div>
+                    <div className="text-xl sm:text-3xl font-bold text-white mb-0.5 sm:mb-1">{stat.value}</div>
+                    <div className="text-[10px] sm:text-sm text-white/60">{stat.label}</div>
                   </div>
                 </div>
               );
