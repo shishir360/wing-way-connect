@@ -6,6 +6,7 @@ import {
   Package, Plane, Users, LayoutDashboard, ArrowLeft, LogOut,
   Settings, Bell, Search, Menu
 } from "lucide-react";
+import Seo from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,8 @@ const adminNav = [
   { name: "Flight Bookings", href: "/admin/bookings", icon: Plane },
   { name: "Users", href: "/admin/users", icon: Users },
 ];
+
+const ADMIN_EMAIL = "shishirmd681@gmail.com";
 
 export default function AdminLayout() {
   const navigate = useNavigate();
@@ -66,41 +69,46 @@ export default function AdminLayout() {
     if (!authLoading && !adminLoading) {
       if (!user) {
         navigate("/admin/login");
+      } else if ((user.email || '').trim().toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+        // STRICT EMAIL CHECK - Redirect authorized users to dashboard
+        console.warn(`Blocked access for: ${user.email}`);
+        navigate("/dashboard");
       } else if (!isAdmin) {
-        // Allow bypass if forced
-        if (new URLSearchParams(window.location.search).get('forced') !== 'true') {
-          navigate("/dashboard");
-        }
+        // DEBUGGING: instead of redirecting, show WHY.
+        return (
+          <div className="flex flex-col items-center justify-center min-h-screen bg-secondary/30 p-4">
+            <div className="bg-card p-8 rounded-xl shadow-xl max-w-md w-full border border-destructive/50">
+              <h1 className="text-2xl font-bold text-destructive mb-4">Access Denied</h1>
+              <p className="text-muted-foreground mb-4">The system does not recognize you as an Admin.</p>
+
+              <div className="bg-muted p-4 rounded-md font-mono text-xs space-y-2 mb-6">
+                <p><span className="font-bold">Email:</span> {user.email}</p>
+                <p><span className="font-bold">User ID:</span> {user.id}</p>
+                <p><span className="font-bold">Role Detected:</span> {useAuth().role || 'null'}</p>
+                <p><span className="font-bold">Is Approved:</span> {useAuth().role === 'admin' ? 'Yes' : 'Unknown/No'}</p>
+              </div>
+
+              <div className="flex gap-2">
+                <Button onClick={() => window.location.reload()} variant="outline" className="w-full">
+                  Retry (Reload)
+                </Button>
+                <Button onClick={handleSignOut} variant="destructive" className="w-full">
+                  Logout
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
       }
     }
   }, [user, authLoading, adminLoading, isAdmin, navigate]);
 
+  // BLOCKING LOADING REMOVED PER USER REQUEST
+  // The auth check happens in the background. If it fails, the useEffect above will redirect.
   if (authLoading || adminLoading) {
-    if (new URLSearchParams(window.location.search).get('forced') === 'true') {
-      // Fallthrough to render content
-    } else {
-      return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 text-center">
-          <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full mb-4" />
-          <p className="text-muted-foreground animate-pulse">Loading Admin Panel...</p>
-
-          {showDebug && (
-            <div className="mt-8 p-4 bg-muted/50 rounded-xl max-w-md w-full border border-destructive/20">
-              <h3 className="text-red-500 font-bold mb-2">⚠️ Taking too long?</h3>
-              <div className="text-left text-xs font-mono space-y-1 mb-4 bg-card p-2 rounded">
-                <p>Auth Loading: {authLoading ? 'YES' : 'NO'}</p>
-                <p>Admin Loading: {adminLoading ? 'YES' : 'NO'}</p>
-                <p>User Found: {user ? 'YES' : 'NO'}</p>
-                <p>User Email: {user?.email || 'None'}</p>
-              </div>
-              <Button variant="destructive" size="sm" onClick={forceUnlock} className="w-full">
-                Force Enter (Debug Mode)
-              </Button>
-            </div>
-          )}
-        </div>
-      );
-    }
+    // Optional: Render a non-blocking loader or skeleton here if needed in the future
+    // For now, we render nothing (or the layout structure below) to make it feel "instant"
+    // But we need the layout to render, so we just let it fall through.
   }
 
   const handleSignOut = async () => {
@@ -110,6 +118,7 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen flex bg-secondary/30 font-sans">
+      <Seo title="Admin Dashboard" description="Admin Dashboard - Wing Way Connect" />
       {/* Sidebar */}
       <aside
         className={cn(

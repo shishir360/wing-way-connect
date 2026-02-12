@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import Seo from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SmartPhoneInput } from "@/components/ui/phone-input";
@@ -98,6 +99,7 @@ export default function GetQuote() {
   if (submitted) {
     return (
       <Layout>
+        <Seo title="Quote Request Sent" description="Your quote request has been received by Wing Way Connect." />
         <section className="section-padding">
           <div className="container-wacc">
             <div className="max-w-xl mx-auto text-center">
@@ -126,6 +128,10 @@ export default function GetQuote() {
 
   return (
     <Layout>
+      <Seo
+        title="Get a Quote"
+        description="Request a free quote for cargo shipping, courier services, or air tickets from Wing Way Connect."
+      />
       {/* Hero */}
       <section className="bg-hero-pattern text-primary-foreground py-12 md:py-16 relative overflow-hidden">
         {/* Floating 3D images - BIGGER */}

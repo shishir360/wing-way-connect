@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Phone, Plane, ChevronRight, ArrowRight, User, LogIn, LayoutDashboard, ShieldCheck } from "lucide-react";
+import { Menu, X, Phone, Plane, ChevronRight, ArrowRight, User, LogIn, LayoutDashboard, ShieldCheck, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -81,7 +81,7 @@ export default function Header() {
           <div className="hidden md:flex items-center gap-3 text-primary-foreground/90 font-medium">
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-              Safe
+              Official Website: wcargo2024.com
             </span>
             <span className="text-primary-foreground/40">•</span>
             <span>Trusted</span>
@@ -97,6 +97,11 @@ export default function Header() {
           {/* Logo */}
           <div className="flex lg:flex-1">
             <Link to="/" className="flex items-center gap-2.5 -m-1.5 p-1.5 group">
+              {/* Logo from public/logo.png */}
+              <img src="/logo.png" alt="WACC" className="h-12 w-auto object-contain sm:h-14" />
+
+              {/* Text logo hidden but kept for SEO/accessibility structure if needed, or fully removed */}
+              {/*
               <div className="relative">
                 <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-primary flex items-center justify-center group-hover:shadow-glow transition-all duration-300">
                   <Plane className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
@@ -111,6 +116,7 @@ export default function Header() {
                   Worldwide AirTicketing Cargo & Courier
                 </span>
               </div>
+              */}
             </Link>
           </div>
 
@@ -152,8 +158,8 @@ export default function Header() {
                   to={role === 'admin' ? '/admin' : role === 'agent' ? '/agent' : '/dashboard'}
                   className="flex items-center gap-1.5"
                 >
-                  {role === 'admin' ? <LayoutDashboard className="h-4 w-4" /> :
-                    role === 'agent' ? <ShieldCheck className="h-4 w-4" /> :
+                  {role === 'admin' ? <ShieldCheck className="h-4 w-4" /> :
+                    role === 'agent' ? <Truck className="h-4 w-4" /> :
                       <User className="h-4 w-4" />}
                   {role === 'admin' ? 'Admin Panel' : role === 'agent' ? 'Agent Panel' : 'Dashboard'}
                 </Link>
@@ -190,7 +196,7 @@ export default function Header() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-50 bg-foreground/20 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-[998] bg-foreground/20 backdrop-blur-sm lg:hidden"
               onClick={() => setMobileMenuOpen(false)}
             />
 
@@ -200,7 +206,7 @@ export default function Header() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed inset-y-0 right-0 z-50 w-full max-w-sm bg-background shadow-2xl lg:hidden safe-top safe-bottom"
+              className="fixed top-0 right-0 z-[999] h-[100dvh] w-full max-w-sm bg-background shadow-2xl lg:hidden safe-top safe-bottom overflow-hidden"
             >
               <div className="flex flex-col h-full">
                 {/* Header */}
@@ -210,10 +216,7 @@ export default function Header() {
                     className="flex items-center gap-2.5"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                      <Plane className="h-5 w-5 text-primary-foreground" />
-                    </div>
-                    <span className="text-xl font-bold text-primary font-display">WACC</span>
+                    <img src="/logo.png" alt="WACC" className="h-10 w-auto object-contain" />
                   </Link>
                   <button
                     type="button"

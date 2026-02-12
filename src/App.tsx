@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import About from "./pages/About";
@@ -25,6 +26,7 @@ import AdminOverview from "./pages/admin/AdminOverview";
 import AdminShipments from "./pages/admin/AdminShipments";
 import AdminBookings from "./pages/admin/AdminBookings";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminAgentProfile from "./pages/admin/AdminAgentProfile";
 import AgentAuth from "./pages/agent/AgentAuth";
 import AgentLayout from "./pages/agent/AgentLayout";
 import AgentDashboard from "./pages/agent/AgentDashboard";
@@ -35,47 +37,50 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/services" element={<Services />} />
-            <Route path="/cargo-courier" element={<CargoCourier />} />
-            <Route path="/air-ticket" element={<AirTicket />} />
-            <Route path="/track-shipment" element={<TrackShipment />} />
-            <Route path="/get-quote" element={<GetQuote />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/faq" element={<FAQ />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/refund" element={<Refund />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/dashboard/profile" element={<ProfilePage />} />
-            <Route path="/admin/login" element={<AdminAuth />} />
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<AdminOverview />} />
-              <Route path="shipments" element={<AdminShipments />} />
-              <Route path="bookings" element={<AdminBookings />} />
-              <Route path="users" element={<AdminUsers />} />
-            </Route>
-            <Route path="/agent/login" element={<AgentAuth />} />
-            <Route path="/agent" element={<AgentLayout />}>
-              <Route index element={<AgentDashboard />} />
-              <Route path="shipments" element={<AgentShipments />} />
-              <Route path="scan" element={<AgentScan />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <HelmetProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/services" element={<Services />} />
+              <Route path="/cargo-courier" element={<CargoCourier />} />
+              <Route path="/air-ticket" element={<AirTicket />} />
+              <Route path="/track-shipment" element={<TrackShipment />} />
+              <Route path="/get-quote" element={<GetQuote />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/refund" element={<Refund />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/dashboard/profile" element={<ProfilePage />} />
+              <Route path="/admin/login" element={<AdminAuth />} />
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<AdminOverview />} />
+                <Route path="shipments" element={<AdminShipments />} />
+                <Route path="bookings" element={<AdminBookings />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="agents/:id" element={<AdminAgentProfile />} />
+              </Route>
+              <Route path="/agent/login" element={<AgentAuth />} />
+              <Route path="/agent" element={<AgentLayout />}>
+                <Route index element={<AgentDashboard />} />
+                <Route path="shipments" element={<AgentShipments />} />
+                <Route path="scan" element={<AgentScan />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </HelmetProvider>
 );
 
 export default App;

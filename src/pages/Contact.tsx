@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import Seo from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,6 +54,7 @@ export default function Contact() {
   if (submitted) {
     return (
       <Layout>
+        <Seo title="Message Sent" description="Thank you for contacting Wing Way Connect." />
         <section className="section-padding">
           <div className="container-wacc">
             <motion.div
@@ -93,6 +95,10 @@ export default function Contact() {
 
   return (
     <Layout>
+      <Seo
+        title="Contact Us"
+        description="Get in touch with Wing Way Connect in Canada and Bangladesh. We are here to assist with your logistics and travel needs."
+      />
       {/* Hero */}
       <section className="page-hero text-primary-foreground py-14 sm:py-18 lg:py-22 relative overflow-hidden">
         {/* Floating 3D images - BIGGER */}
@@ -124,7 +130,7 @@ export default function Contact() {
           animate={{ y: [0, -8, 0] }}
           transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
         />
-        
+
         <div className="container-wacc relative">
           <motion.div {...fadeInUp} transition={{ duration: 0.5 }}>
             <div className="flex items-center gap-2 text-primary-foreground/60 text-sm mb-4">
@@ -156,7 +162,7 @@ export default function Contact() {
                   animate={{ y: [0, -8, 0] }}
                   transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
                 />
-                
+
                 <div className="flex items-center gap-4 mb-6">
                   <span className="text-4xl sm:text-5xl">🇨🇦</span>
                   <h2 className="text-2xl sm:text-3xl font-bold font-display">Canada Office</h2>
@@ -210,7 +216,7 @@ export default function Contact() {
                   animate={{ y: [0, -8, 0] }}
                   transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
                 />
-                
+
                 <div className="flex items-center gap-4 mb-6">
                   <span className="text-4xl sm:text-5xl">🇧🇩</span>
                   <h2 className="text-2xl sm:text-3xl font-bold font-display">Bangladesh Office</h2>
@@ -265,7 +271,7 @@ export default function Contact() {
                 animate={{ rotate: [0, 5, 0] }}
                 transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
               />
-              
+
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                   <Send className="h-5 w-5 text-primary" />

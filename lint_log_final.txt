@@ -1,0 +1,72 @@
+
+> vite_react_shadcn_ts@0.0.0 lint
+> eslint .
+
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\components\ui\badge.tsx
+  29:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\components\ui\button.tsx
+  47:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\components\ui\command.tsx
+  24:11  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\components\ui\form.tsx
+  129:10  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\components\ui\navigation-menu.tsx
+  111:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\components\ui\sidebar.tsx
+  636:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\components\ui\sonner.tsx
+  27:19  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\components\ui\textarea.tsx
+  5:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\components\ui\toggle.tsx
+  37:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\contexts\AuthContext.tsx
+  154:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\hooks\useAdminData.ts
+   32:6  warning  React Hook useEffect has a missing dependency: 'fetchAll'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   44:6  warning  React Hook useEffect has a missing dependency: 'fetchAll'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   82:6  warning  React Hook useEffect has a missing dependency: 'fetchAll'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  122:6  warning  React Hook useEffect has a missing dependency: 'fetchAll'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\hooks\useAgent.ts
+  19:6  warning  React Hook useEffect has a missing dependency: 'checkAgentRole'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\hooks\useFlightBookings.ts
+  45:6  warning  React Hook useEffect has a missing dependency: 'fetchBookings'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\hooks\useProfile.ts
+  33:6  warning  React Hook useEffect has a missing dependency: 'fetchProfile'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\hooks\useShipments.ts
+  49:6  warning  React Hook useEffect has a missing dependency: 'fetchShipments'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  67:6  warning  React Hook useEffect has a missing dependency: 'fetchShipments'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\pages\AirTicket.tsx
+  81:6  warning  React Hook useEffect has a missing dependency: 'submitFlightBooking'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\pages\CargoCourier.tsx
+  91:6  warning  React Hook useEffect has a missing dependency: 'submitBooking'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\pages\TrackShipment.tsx
+  55:6  warning  React Hook useEffect has a missing dependency: 'handleSearch'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  85:6  warning  React Hook useEffect has a missing dependency: 'handleSearch'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\pages\agent\AgentDashboard.tsx
+  16:6  warning  React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\pages\agent\AgentShipments.tsx
+  17:6  warning  React Hook useEffect has a missing dependency: 'fetchShipments'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+Γ£û 25 problems (2 errors, 23 warnings)
+

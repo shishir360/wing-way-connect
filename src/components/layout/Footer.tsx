@@ -34,7 +34,7 @@ export default function Footer() {
     <footer className="relative bg-primary text-primary-foreground overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PHBhdGggZD0iTTAgMGg0MHY0MEgweiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
-      
+
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20" />
 
@@ -44,9 +44,7 @@ export default function Footer() {
           {/* Company Info */}
           <div className="sm:col-span-2 lg:col-span-1 space-y-5">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
-                <Plane className="h-6 w-6" />
-              </div>
+              <img src="/logo.png" alt="WACC" className="h-16 w-auto object-contain bg-white/10 p-2 rounded-xl backdrop-blur-sm" />
               <div>
                 <span className="text-2xl font-bold font-display">WACC</span>
                 <p className="text-xs text-primary-foreground/70">
@@ -108,7 +106,7 @@ export default function Footer() {
           {/* Contact */}
           <div>
             <h3 className="text-lg font-bold mb-5 font-display">Contact Us</h3>
-            
+
             {/* Canada Office */}
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-3">
@@ -198,7 +196,7 @@ export default function Footer() {
         <div className="mt-12 sm:mt-16 pt-8 border-t border-primary-foreground/10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-primary-foreground/60 text-center md:text-left">
-              © 2026 WACC - Worldwide AirTicketing Cargo & Courier. All Rights Reserved.
+              © 2026 WACC - wcargo2024.com. All Rights Reserved.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-primary-foreground/60">
               <Link to="/terms" className="hover:text-primary-foreground transition-colors">Terms</Link>

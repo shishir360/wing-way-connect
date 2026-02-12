@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Package, Plane, Truck, MapPin, Phone, Clock, Shield, CheckCircle, Users, Award, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import Seo from "@/components/Seo";
 
 // Import 3D images
 import team3D from "@/assets/team-3d.png";
@@ -50,6 +51,10 @@ const whyChooseUs = [
 export default function About() {
   return (
     <Layout>
+      <Seo
+        title="About Us"
+        description="Learn about Wing Way Connect, our mission to bridge distances, and our team of experts dedicated to providing top-tier logistics and travel solutions."
+      />
       {/* Hero */}
       <section className="page-hero text-primary-foreground py-16 sm:py-20 lg:py-28 relative overflow-hidden">
         {/* Floating 3D images - BIGGER */}
@@ -74,7 +79,7 @@ export default function About() {
           animate={{ y: [0, 8, 0], x: [0, 10, 0] }}
           transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
         />
-        
+
         <div className="container-wacc relative">
           <motion.div {...fadeInUp} transition={{ duration: 0.5 }}>
             <div className="flex items-center gap-2 text-primary-foreground/60 text-sm mb-4">
@@ -131,16 +136,16 @@ export default function About() {
               <h2 className="section-title mb-6">Who We Are</h2>
               <div className="space-y-4 text-muted-foreground leading-relaxed">
                 <p>
-                  WACC (Worldwide AirTicketing Cargo & Courier) is a leading logistics and travel service provider 
+                  WACC (Worldwide AirTicketing Cargo & Courier) is a leading logistics and travel service provider
                   specializing in cargo, courier, and air ticket booking services between Canada and Bangladesh.
                 </p>
                 <p>
-                  We understand the needs of the Bangladeshi community in Canada and provide reliable, affordable, 
+                  We understand the needs of the Bangladeshi community in Canada and provide reliable, affordable,
                   and safe solutions for shipping packages and booking flights.
                 </p>
                 <p>
-                  With offices in both Canada and Bangladesh, we offer seamless door-to-door delivery, real-time 
-                  tracking, and dedicated customer support in both countries. Whether you're sending gifts to loved 
+                  With offices in both Canada and Bangladesh, we offer seamless door-to-door delivery, real-time
+                  tracking, and dedicated customer support in both countries. Whether you're sending gifts to loved
                   ones, shipping business cargo, or booking your next flight home, WACC is your trusted partner.
                 </p>
               </div>
@@ -148,7 +153,7 @@ export default function About() {
             <motion.div {...fadeInUp} transition={{ duration: 0.5, delay: 0.2 }} className="relative">
               <div className="bg-muted/50 rounded-3xl p-8 sm:p-10 text-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-cta/5" />
-                
+
                 {/* Decorative 3D images - BIGGER */}
                 <motion.img
                   src={team3D}
@@ -164,7 +169,7 @@ export default function About() {
                   animate={{ y: [0, 8, 0] }}
                   transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
                 />
-                
+
                 <div className="relative">
                   <div className="flex justify-center items-center gap-4 sm:gap-6 mb-6">
                     <span className="text-5xl sm:text-6xl filter drop-shadow-lg">🇧🇩</span>
@@ -199,7 +204,7 @@ export default function About() {
           animate={{ y: [0, 10, 0] }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
         />
-        
+
         <div className="container-wacc relative">
           <div className="grid md:grid-cols-2 gap-6 sm:gap-8">
             <motion.div {...fadeInUp} transition={{ duration: 0.5 }}>
@@ -216,7 +221,7 @@ export default function About() {
                 </div>
                 <h3 className="text-2xl sm:text-3xl font-bold mb-4 font-display">Our Mission</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  To provide safe, trusted, and affordable cargo and air ticketing services that connect 
+                  To provide safe, trusted, and affordable cargo and air ticketing services that connect
                   families and businesses between Canada and Bangladesh with excellence and care.
                 </p>
               </div>
@@ -235,7 +240,7 @@ export default function About() {
                 </div>
                 <h3 className="text-2xl sm:text-3xl font-bold mb-4 font-display">Our Vision</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  To become the most reliable and customer-focused logistics and travel service provider 
+                  To become the most reliable and customer-focused logistics and travel service provider
                   for the Canada-Bangladesh corridor, setting new standards in the industry.
                 </p>
               </div>
@@ -253,7 +258,7 @@ export default function About() {
           animate={{ x: [0, 15, 0] }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
         />
-        
+
         <div className="container-wacc">
           <motion.div {...fadeInUp} transition={{ duration: 0.5 }} className="text-center mb-12">
             <span className="inline-flex items-center gap-2 text-sm font-medium text-primary bg-primary/5 rounded-full px-4 py-1.5 mb-4 border border-primary/10">

@@ -1,0 +1,150 @@
+
+> vite_react_shadcn_ts@0.0.0 lint
+> eslint .
+
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\components\qr\QRGenerator.tsx
+  7:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\components\qr\QRScanner.tsx
+  54:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\components\ui\badge.tsx
+  29:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\components\ui\button.tsx
+  47:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\components\ui\command.tsx
+  24:11  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\components\ui\form.tsx
+  129:10  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\components\ui\navigation-menu.tsx
+  111:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\components\ui\phone-input.tsx
+  11:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  82:50  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\components\ui\sidebar.tsx
+  636:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\components\ui\sonner.tsx
+  27:19  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\components\ui\textarea.tsx
+  5:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\components\ui\toggle.tsx
+  37:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\contexts\AuthContext.tsx
+   40:65  error    Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+   44:65  error    Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+   54:64  error    Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+   62:41  error    Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  154:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\hooks\useAdminData.ts
+   32:6   warning  React Hook useEffect has a missing dependency: 'fetchAll'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   44:6   warning  React Hook useEffect has a missing dependency: 'fetchAll'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   82:6   warning  React Hook useEffect has a missing dependency: 'fetchAll'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  112:17  error    Unexpected any. Specify a different type                                                                     @typescript-eslint/no-explicit-any
+  122:6   warning  React Hook useEffect has a missing dependency: 'fetchAll'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\hooks\useAgent.ts
+  19:6  warning  React Hook useEffect has a missing dependency: 'checkAgentRole'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\hooks\useFlightBookings.ts
+  45:6  warning  React Hook useEffect has a missing dependency: 'fetchBookings'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\hooks\useProfile.ts
+  33:6  warning  React Hook useEffect has a missing dependency: 'fetchProfile'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\hooks\useShipments.ts
+  49:6  warning  React Hook useEffect has a missing dependency: 'fetchShipments'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  67:6  warning  React Hook useEffect has a missing dependency: 'fetchShipments'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\pages\AirTicket.tsx
+   81:6   warning  React Hook useEffect has a missing dependency: 'submitFlightBooking'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  146:21  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\pages\CargoCourier.tsx
+   91:6   warning  React Hook useEffect has a missing dependency: 'submitBooking'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  150:21  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\pages\TrackShipment.tsx
+   55:6   warning  React Hook useEffect has a missing dependency: 'handleSearch'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   68:40  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   85:6   warning  React Hook useEffect has a missing dependency: 'handleSearch'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  114:50  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  126:60  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  196:19  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\pages\admin\AdminAuth.tsx
+   74:76   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   91:128  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   92:79   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  116:96   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  119:45   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\pages\admin\AdminBookings.tsx
+  29:58  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  30:54  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  51:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  58:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\pages\admin\AdminShipments.tsx
+   35:60  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   36:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   38:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   65:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  111:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  238:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\pages\admin\AdminUsers.tsx
+   29:13   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   45:52   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   47:56   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   52:67   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   73:52   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   73:111  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   74:39   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   85:34   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   91:41   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   94:33   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   98:40   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  362:57   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  363:30   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  363:69   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\pages\agent\AgentAuth.tsx
+   62:76  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   98:94  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  101:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\pages\agent\AgentDashboard.tsx
+  11:50  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  16:6   warning  React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  90:86  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\pages\agent\AgentScan.tsx
+   19:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   31:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   36:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  143:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\src\pages\agent\AgentShipments.tsx
+  11:46  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  17:6   warning  React Hook useEffect has a missing dependency: 'fetchShipments'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\supabase\functions\notify-status-change\index.ts
+  114:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\tailwind.config.ts
+  227:13  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+Γ£û 81 problems (58 errors, 23 warnings)
+

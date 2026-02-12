@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import Seo from "@/components/Seo";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,7 @@ export default function AgentShipments() {
 
   return (
     <div>
+      <Seo title="Shipments" description="Track, scan, and update shipment statuses assigned to you." />
       <h1 className="text-2xl sm:text-3xl font-bold font-display mb-6">My Shipments</h1>
 
       <div className="relative mb-6">
@@ -69,7 +71,7 @@ export default function AgentShipments() {
                 <div className="flex items-start gap-2">
                   <User className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-muted-foreground">প্রেরক</p>
+                    <p className="text-muted-foreground">Sender</p>
                     <p className="font-medium">{s.sender_name}</p>
                     <p className="text-xs text-muted-foreground">{s.sender_phone}</p>
                   </div>
@@ -77,7 +79,7 @@ export default function AgentShipments() {
                 <div className="flex items-start gap-2">
                   <User className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-muted-foreground">প্রাপক</p>
+                    <p className="text-muted-foreground">Receiver</p>
                     <p className="font-medium">{s.receiver_name}</p>
                     <p className="text-xs text-muted-foreground">{s.receiver_phone}</p>
                   </div>
@@ -85,28 +87,20 @@ export default function AgentShipments() {
                 <div className="flex items-start gap-2">
                   <Package className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-muted-foreground">ওজন</p>
+                    <p className="text-muted-foreground">Weight</p>
                     <p className="font-medium">{s.weight || '-'} kg</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-muted-foreground">ডেলিভারি ঠিকানা</p>
+                    <p className="text-muted-foreground">Delivery Address</p>
                     <p className="font-medium text-xs">{s.delivery_address || '-'}</p>
                   </div>
                 </div>
               </div>
 
-              <QRGenerator
-                trackingId={s.tracking_id}
-                senderName={s.sender_name}
-                receiverName={s.receiver_name}
-                receiverPhone={s.receiver_phone}
-                route={s.route}
-                weight={s.weight}
-                packages={s.packages}
-              />
+              <QRGenerator shipment={s} />
             </div>
           ))}
         </div>

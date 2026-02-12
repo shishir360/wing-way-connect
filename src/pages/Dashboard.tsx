@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import Seo from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,6 +58,7 @@ export default function Dashboard() {
   if (authLoading || profileLoading) {
     return (
       <Layout>
+        <Seo title="Dashboard" description="User Dashboard - Wing Way Connect" />
         <div className="min-h-[60vh] flex items-center justify-center">
           <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full" />
         </div>
@@ -66,6 +68,7 @@ export default function Dashboard() {
 
   return (
     <Layout>
+      <Seo title="Dashboard" description={`Welcome back, ${profile?.full_name || "User"} - Wing Way Connect Dashboard`} />
       <div className="bg-muted/30 min-h-screen pb-20">
         {/* Premium Hero Section */}
         <section className="bg-[#0f172a] text-white pt-10 pb-20 relative overflow-hidden rounded-b-[3rem]">

@@ -8,10 +8,14 @@ import type { Profile } from './useProfile';
 export function useAdminShipments() {
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const fetchAll = async () => {
-    if (!user) return;
+    if (authLoading) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -28,8 +32,8 @@ export function useAdminShipments() {
   };
 
   useEffect(() => {
-    if (user) fetchAll();
-  }, [user]);
+    fetchAll();
+  }, [user, authLoading]);
 
   // Real-time subscription
   useEffect(() => {
@@ -58,10 +62,14 @@ export function useAdminShipments() {
 export function useAdminBookings() {
   const [bookings, setBookings] = useState<FlightBooking[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const fetchAll = async () => {
-    if (!user) return;
+    if (authLoading) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -78,8 +86,8 @@ export function useAdminBookings() {
   };
 
   useEffect(() => {
-    if (user) fetchAll();
-  }, [user]);
+    fetchAll();
+  }, [user, authLoading]);
 
   const updateBookingStatus = async (id: string, status: string) => {
     const { error } = await supabase
@@ -97,10 +105,14 @@ export function useAdminProfiles() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const fetchAll = async () => {
-    if (!user) return;
+    if (authLoading) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -118,8 +130,73 @@ export function useAdminProfiles() {
   };
 
   useEffect(() => {
-    if (user) fetchAll();
-  }, [user]);
+    fetchAll();
+  }, [user, authLoading]);
 
   return { profiles, loading, error, refetch: fetchAll };
+}
+
+export function useAgentDetails(userId: string | undefined) {
+  const [agent, setAgent] = useState<any>(null);
+  const [shipments, setShipments] = useState<Shipment[]>([]);
+  const [stats, setStats] = useState({ total: 0, delivered: 0, pending: 0, today: 0, thisMonth: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const fetchDetails = async () => {
+      setLoading(true);
+      try {
+        // 1. Fetch Profile & Agent Info
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single();
+        const { data: agentData } = await supabase.from('agents' as any).select('*').eq('user_id', userId).maybeSingle();
+        const { data: wallet } = await supabase.from('wallets' as any).select('*').eq('user_id', userId).maybeSingle();
+
+        // 2. Fetch Shipments assigned to this agent
+        const { data: interactions } = await supabase
+          .from('shipment_timeline') // Or scans? Let's use shipments assigned_agent first as primary
+          .select('shipment_id')
+          .eq('status', 'delivered');
+        // Actually, 'assigned_agent' on shipments table is better for "Current Tasks"
+        // usage of scans or timeline is better for "History" if they touched it but weren't the *assigned* agent?
+        // For now, let's stick to `assigned_agent` column on shipments for simplicity and "Current Tasks".
+
+        const { data: allShipments } = await supabase
+          .from('shipments')
+          .select('*')
+          .eq('assigned_agent', userId)
+          .order('created_at', { ascending: false });
+
+        const safeShipments = (allShipments || []) as Shipment[];
+        setShipments(safeShipments);
+
+        // 3. Calc Stats
+        const now = new Date();
+        const startOfDay = new Date(now.setHours(0, 0, 0, 0)).toISOString();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+        const delivered = safeShipments.filter(s => s.status === 'delivered');
+
+        setStats({
+          total: safeShipments.length,
+          delivered: delivered.length,
+          pending: safeShipments.length - delivered.length,
+          today: safeShipments.filter(s => s.updated_at >= startOfDay && s.status === 'delivered').length, // Approx
+          thisMonth: safeShipments.filter(s => s.updated_at >= startOfMonth && s.status === 'delivered').length
+        });
+
+        setAgent({ ...profile, ...(agentData as any || {}), wallet });
+
+      } catch (error) {
+        console.error("Error fetching agent details:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDetails();
+  }, [userId]);
+
+  return { agent, shipments, stats, loading };
 }

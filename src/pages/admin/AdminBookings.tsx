@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Seo from "@/components/Seo";
 import { useAdminBookings } from "@/hooks/useAdminData";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -68,6 +69,7 @@ export default function AdminBookings() {
 
   return (
     <div>
+      <Seo title="Manage Bookings | Admin" />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold font-display">Manage Bookings</h1>
         <Button variant="outline" size="sm" onClick={refetch}>

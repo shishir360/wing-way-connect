@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import Seo from "@/components/Seo";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -27,12 +28,12 @@ export default function AgentScan() {
   useEffect(() => {
     if (user) {
       const fetchRole = async () => {
-        const { data } = await supabase
+        const { data } = await (supabase as any)
           .from('user_roles')
           .select('designated_status')
           .eq('user_id', user.id)
           .eq('role', 'agent')
-          .single();
+          .single() as any;
 
         if (data?.designated_status) {
           setDesignatedStatus(data.designated_status);
@@ -163,6 +164,7 @@ export default function AgentScan() {
   if (scanSuccess) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] animate-in fade-in zoom-in duration-300">
+        <Seo title="Scan Complete" />
         <div className="w-24 h-24 rounded-full bg-green-500/20 flex items-center justify-center mb-6 ring-4 ring-green-500/10">
           <CheckCircle className="h-12 w-12 text-green-600 drop-shadow-sm" />
         </div>
@@ -182,6 +184,7 @@ export default function AgentScan() {
 
   return (
     <div className="max-w-md mx-auto">
+      <Seo title="Smart Scan" />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold font-display flex items-center gap-2">
           <RefreshCw className="h-6 w-6 text-primary animate-pulse-slow" />

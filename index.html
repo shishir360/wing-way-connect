@@ -1,26 +1,98 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
-    <title>Lovable App</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
 
-    <!-- TODO: Update og:title to match your application name -->
-    <meta property="og:title" content="Lovable App" />
-    <meta property="og:description" content="Lovable Generated Project" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wing Way Connect | wcargo2024.com</title>
+  <meta name="description" content="Global Logistics & Travel Solution - wcargo2024.com" />
+  <meta name="author" content="Wing Way Connect" />
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-  </head>
+  <meta property="og:title" content="Wing Way Connect | Official Website" />
+  <meta property="og:description"
+    content="Your Global Logistics & Travel Partner. Air tickets, cargo, and courier services." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://wcargo2024.com" />
+  <meta property="og:image" content="/og-image.png" />
 
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@WingWayConnect" />
+  <meta name="twitter:title" content="Wing Way Connect | wcargo2024.com" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <script>
+    // Dynamic Manifest Switching
+    (function () {
+      const path = window.location.pathname;
+      let manifestFile = 'manifest-user.webmanifest';
+
+      if (path.startsWith('/admin')) {
+        manifestFile = 'manifest-admin.webmanifest';
+      } else if (path.startsWith('/agent')) {
+        manifestFile = 'manifest-agent.webmanifest';
+      }
+
+      const link = document.createElement('link');
+      link.rel = 'manifest';
+      link.href = '/' + manifestFile;
+      document.head.appendChild(link);
+    })();
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script>
+    // Polyfill for crypto.randomUUID in insecure contexts (HTTP)
+    if (typeof window.crypto === 'undefined') {
+      window.crypto = {};
+    }
+    if (typeof window.crypto.randomUUID === 'undefined') {
+      window.crypto.randomUUID = function () {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+          var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+      };
+    }
+    // Dummy polyfill for SubtleCrypto to prevent immediate crashes from extensions
+    if (typeof window.crypto.subtle === 'undefined') {
+      window.crypto.subtle = {
+        digest: async () => new ArrayBuffer(0),
+        importKey: async () => null,
+        sign: async () => new ArrayBuffer(0),
+        // Add other methods as needed, this is just to prevent "undefined" errors
+      };
+    }
+
+    window.addEventListener('error', function (event) {
+      // Ignore errors from chrome extensions
+      if (!event.filename || event.filename.startsWith('chrome-extension://') || event.filename.startsWith('moz-extension://')) {
+        return;
+      }
+
+      var root = document.getElementById('root');
+      if (root && (!root.innerHTML || root.innerHTML === '')) {
+        var msg = document.createElement('div');
+        msg.style.cssText = 'padding: 20px; color: red; font-family: monospace; background: #fff0f0; border: 1px solid #ffcccc; margin: 20px; z-index: 9999; position: relative;';
+        msg.innerHTML = '<h1>Global Error</h1><p>' + event.message + '</p><pre>' + (event.error ? event.error.stack : 'No stack') + '</pre>';
+        document.body.appendChild(msg);
+      }
+    });
+    // Handle unhandled promise rejections
+    window.addEventListener('unhandledrejection', function (event) {
+      // Ignore extension errors (often string messages)
+      if (event.reason && typeof event.reason === 'string' && (event.reason.includes('MetaMask') || event.reason.includes('Extension'))) return;
+
+      var root = document.getElementById('root');
+      if (root && (!root.innerHTML || root.innerHTML === '')) {
+        var msg = document.createElement('div');
+        msg.style.cssText = 'padding: 20px; color: darkred; font-family: monospace; background: #fff0f0; border: 1px solid #ffcccc; margin: 20px; z-index: 9999; position: relative;';
+        msg.innerHTML = '<h1>Unhandled Promise Rejection</h1><p>' + event.reason + '</p>';
+        document.body.appendChild(msg);
+      }
+    });
+  </script>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>

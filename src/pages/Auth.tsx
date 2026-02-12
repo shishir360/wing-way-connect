@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import Seo from "@/components/Seo";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
-import { Plane, Mail, Lock, User, ArrowRight, Loader2 } from "lucide-react";
+import { Plane, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
 
 // Import 3D images
 import airplane3D from "@/assets/airplane-3d.png";
@@ -16,19 +17,19 @@ import suitcase3D from "@/assets/suitcase-3d.png";
 import box3D from "@/assets/box-3d.png";
 
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const { signIn, signUp, user, role } = useAuth();
+  const { signIn, user, role } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user && role) {
+    if (user) {
+      // If role is loaded, use it. If not, default to dashboard for standard users.
+      // We don't want to block access if role is taking a moment, but ideally role is fast.
       if (role === 'admin') navigate("/admin");
       else if (role === 'agent') navigate("/agent");
       else navigate("/dashboard");
@@ -48,69 +49,36 @@ export default function Auth() {
       return;
     }
 
-    if (!isLogin && password.length < 6) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 6 characters",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      if (isLogin) {
-        const { error } = await signIn(email, password);
-        if (error) {
-          if (error.message.includes("Invalid login credentials")) {
-            toast({
-              title: "Login failed",
-              description: "Invalid email or password",
-              variant: "destructive",
-            });
-          } else if (error.message.includes("Email not confirmed")) {
-            toast({
-              title: "Verify your email",
-              description: "Please click the link sent to your email",
-              variant: "destructive",
-            });
-          } else {
-            toast({
-              title: "Login failed",
-              description: error.message,
-              variant: "destructive",
-            });
-          }
+      const { error } = await signIn(email, password);
+      if (error) {
+        if (error.message.includes("Invalid login credentials")) {
+          toast({
+            title: "Login failed",
+            description: "Invalid email or password",
+            variant: "destructive",
+          });
+        } else if (error.message.includes("Email not confirmed")) {
+          toast({
+            title: "Verify your email",
+            description: "Please click the link sent to your email",
+            variant: "destructive",
+          });
         } else {
           toast({
-            title: "Welcome!",
-            description: "Successfully logged in",
+            title: "Login failed",
+            description: error.message,
+            variant: "destructive",
           });
-          // Navigation handled by useEffect when user/role updates
         }
       } else {
-        const { error } = await signUp(email, password, fullName);
-        if (error) {
-          if (error.message.includes("User already registered")) {
-            toast({
-              title: "Account exists",
-              description: "An account already exists with this email. Please login.",
-              variant: "destructive",
-            });
-          } else {
-            toast({
-              title: "Registration failed",
-              description: error.message,
-              variant: "destructive",
-            });
-          }
-        } else {
-          toast({
-            title: "Registration successful!",
-            description: "Please check your email to verify your account",
-          });
-        }
+        toast({
+          title: "Welcome!",
+          description: "Successfully logged in",
+        });
+        // Navigation handled by useEffect when user/role updates
       }
     } catch (err) {
       console.error(err);
@@ -126,6 +94,7 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-hero-pattern flex items-center justify-center p-4 relative overflow-hidden">
+      <Seo title="Login" description="Login to track shipments and manage your bookings with Wing Way Connect." />
       {/* Floating 3D images */}
       <motion.img
         src={airplane3D}
@@ -174,48 +143,14 @@ export default function Auth() {
         <div className="bg-card/95 backdrop-blur-xl rounded-3xl border border-border/50 p-8 shadow-2xl">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold font-display mb-2">
-              {isLogin ? "Login to your account" : "Create a new account"}
+              Login to your account
             </h1>
             <p className="text-muted-foreground">
-              {isLogin ? "Track your shipments" : "Join WACC"}
+              Track your shipments
             </p>
           </div>
 
-          {/* Tabs */}
-          <div className="flex bg-muted rounded-xl p-1 mb-6">
-            <button
-              onClick={() => setIsLogin(true)}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${isLogin ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                }`}
-            >
-              Login
-            </button>
-            <button
-              onClick={() => setIsLogin(false)}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${!isLogin ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                }`}
-            >
-              Register
-            </button>
-          </div>
-
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div>
-                <Label className="text-sm font-medium">Full Name</Label>
-                <div className="relative mt-1.5">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
-                  <Input
-                    type="text"
-                    placeholder="Your name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="pl-10 h-12 rounded-xl bg-muted/50"
-                  />
-                </div>
-              </div>
-            )}
-
             <div>
               <Label className="text-sm font-medium">Email</Label>
               <div className="relative mt-1.5">
@@ -242,9 +177,6 @@ export default function Auth() {
                   className="pl-10 h-12 rounded-xl bg-muted/50"
                 />
               </div>
-              {!isLogin && (
-                <p className="text-xs text-muted-foreground mt-1.5">At least 6 characters</p>
-              )}
             </div>
 
             <Button
@@ -256,7 +188,7 @@ export default function Auth() {
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <>
-                  {isLogin ? "Login" : "Register"}
+                  Login
                   <ArrowRight className="h-5 w-5 ml-2" />
                 </>
               )}
@@ -266,10 +198,7 @@ export default function Auth() {
           {/* Quick Login Info */}
           <div className="mt-6 p-4 bg-muted/50 rounded-xl">
             <p className="text-xs text-center text-muted-foreground">
-              {isLogin
-                ? "Don't have an account? Click the Register tab above"
-                : "You'll need to verify your email after registration"
-              }
+              Don't have an account? Contact support.
             </p>
           </div>
         </div>

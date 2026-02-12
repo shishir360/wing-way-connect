@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Package, ScanLine, CheckCircle, Clock } from "lucide-react";
 import { motion } from "framer-motion";
+import Seo from "@/components/Seo";
 
 export default function AgentDashboard() {
   const { user } = useAuth();
@@ -52,6 +53,7 @@ export default function AgentDashboard() {
 
   return (
     <div>
+      <Seo title="Agent Overview" description="Agent delivery statistics and recent activity." />
       <h1 className="text-2xl sm:text-3xl font-bold font-display mb-6">Agent Dashboard</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">

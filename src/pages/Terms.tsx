@@ -1,9 +1,14 @@
 import Layout from "@/components/layout/Layout";
+import Seo from "@/components/Seo";
 import { Link } from "react-router-dom";
 
 export default function Terms() {
   return (
     <Layout>
+      <Seo
+        title="Terms & Conditions"
+        description="Read the Terms and Conditions for using Wing Way Connect cargo, courier, and travel services."
+      />
       {/* Hero */}
       <section className="bg-hero-pattern text-primary-foreground py-16 md:py-20">
         <div className="container-wacc">

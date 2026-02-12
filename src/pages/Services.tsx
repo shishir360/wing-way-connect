@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Package, Plane, Globe, Truck, ArrowRight, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import Seo from "@/components/Seo";
 
 // Import 3D images
 import box3D from "@/assets/box-3d.png";
@@ -100,6 +101,10 @@ const services = [
 export default function Services() {
   return (
     <Layout>
+      <Seo
+        title="Our Services"
+        description="Explore our wide range of services including Air Ticketing, Cargo, Courier, Visa Assistance, and Holiday Packages."
+      />
       {/* Hero */}
       <section className="bg-hero-pattern text-primary-foreground py-16 md:py-20 relative overflow-hidden">
         {/* Floating 3D images - BIGGER */}
@@ -138,7 +143,7 @@ export default function Services() {
           animate={{ y: [0, 8, 0] }}
           transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
         />
-        
+
         <div className="container-wacc relative">
           <div className="flex items-center gap-2 text-primary-foreground/70 text-sm mb-4">
             <Link to="/" className="hover:text-primary-foreground">Home</Link>
@@ -214,7 +219,7 @@ export default function Services() {
           animate={{ y: [0, 10, 0], x: [0, -8, 0] }}
           transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
         />
-        
+
         <div className="container-wacc relative">
           <h2 className="section-title text-center mb-8">Service Comparison</h2>
           <div className="max-w-3xl mx-auto overflow-x-auto">
@@ -267,7 +272,7 @@ export default function Services() {
           animate={{ x: [0, 20, 0] }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
         />
-        
+
         <div className="container-wacc text-center relative">
           <h2 className="section-title mb-4">Not Sure Which Service You Need?</h2>
           <p className="text-muted-foreground mb-8 max-w-xl mx-auto">

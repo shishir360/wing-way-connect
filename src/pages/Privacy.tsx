@@ -1,9 +1,14 @@
 import Layout from "@/components/layout/Layout";
+import Seo from "@/components/Seo";
 import { Link } from "react-router-dom";
 
 export default function Privacy() {
   return (
     <Layout>
+      <Seo
+        title="Privacy Policy"
+        description="Read the Privacy Policy of Wing Way Connect to understand how we handle your data."
+      />
       {/* Hero */}
       <section className="bg-hero-pattern text-primary-foreground py-16 md:py-20">
         <div className="container-wacc">

@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import Seo from "@/components/Seo";
 import { useAdminProfiles } from "@/hooks/useAdminData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, RefreshCw, User, ShieldCheck, Truck, CheckCircle, XCircle, Eye, FileText, Download, Power, Ban, Briefcase } from "lucide-react";
+import { Search, RefreshCw, User, ShieldCheck, Truck, CheckCircle, XCircle, Eye, FileText, Download, Power, Ban, Briefcase, ExternalLink } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -37,7 +39,9 @@ const statusOptions = [
 
 export default function AdminUsers() {
   const { profiles, loading, error, refetch } = useAdminProfiles();
-  const [search, setSearch] = useState("");
+  /* SEARCH PARAM SUPPORT */
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("search") || "");
   const [agentRequests, setAgentRequests] = useState<AgentRequest[]>([]);
   const [loadingAgents, setLoadingAgents] = useState(true);
   const [tab, setTab] = useState<"users" | "agents">("agents");
@@ -52,6 +56,7 @@ export default function AdminUsers() {
 
   useEffect(() => {
     fetchAgentRequests();
+    if (searchParams.get("search")) setTab("users");
   }, []);
 
   const fetchAgentRequests = async () => {
@@ -69,7 +74,7 @@ export default function AdminUsers() {
       const { data: profs } = await supabase.from('profiles').select('*').in('id', userIds);
 
       // Fetch Wallets
-      const { data: wallets } = await supabase.from('wallets').select('*').in('user_id', userIds);
+      const { data: wallets } = await (supabase as any).from('wallets').select('*').in('user_id', userIds) as any;
       const walletMap: Record<string, any> = {};
       wallets?.forEach(w => {
         walletMap[w.user_id] = w;
@@ -87,10 +92,10 @@ export default function AdminUsers() {
   };
 
   const fetchAgentDocuments = async (userId: string) => {
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from('agent_documents')
       .select('*')
-      .eq('user_id', userId);
+      .eq('user_id', userId) as any;
     setAgentDocuments(data || []);
   };
 
@@ -136,7 +141,7 @@ export default function AdminUsers() {
   const toggleUserActivation = async (userId: string, currentStatus: boolean) => {
     const newStatus = !currentStatus;
     const { error } = await supabase
-      .from('profiles')
+      .from('profiles' as any)
       .update({ is_active: newStatus })
       .eq('id', userId);
 
@@ -151,13 +156,29 @@ export default function AdminUsers() {
     }
   };
 
+  const updateDesignatedStatus = async (value: string) => {
+    if (!selectedAgentRole) return;
+    const { error } = await supabase
+      .from('user_roles')
+      .update({ designated_status: value === "none" ? null : value })
+      .eq('id', selectedAgentRole.id);
+
+    if (error) {
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Role Updated" });
+      setSelectedAgentRole({ ...selectedAgentRole, designated_status: value === "none" ? null : value });
+      fetchAgentRequests();
+    }
+  };
+
   /* MAKE AGENT functionality */
   const handleMakeAgent = async () => {
     if (!selectedUser) return;
 
     // 1. Update Profile Role
     const { error: profileError } = await supabase
-      .from('profiles')
+      .from('profiles' as any)
       .update({ role: 'agent' })
       .eq('id', selectedUser.id);
 
@@ -186,9 +207,16 @@ export default function AdminUsers() {
     }
   };
 
+  // Create a Set of Agent IDs for efficient lookup
+  const agentIds = new Set(agentRequests.map(a => a.user_id));
+
   const filtered = profiles.filter(p => {
-    // Exclude admins AND AGENTS from the user list
-    if (p.role === 'admin' || p.role === 'super_admin' || p.role === 'agent') return false;
+    // Exclude admins AND AGENTS (checked via Role OR Agent List)
+    const pAny = p as any;
+    if (pAny.role === 'admin' || pAny.role === 'super_admin' || pAny.role === 'agent') return false;
+
+    // Strict Filter: If they are in the agent list (pending OR approved), hide them from Users tab
+    if (agentIds.has(p.id)) return false;
 
     // Explicitly hide the main admin (handling typos like gmai.com vs gmail.com)
     const emailLower = (p.email || '').toLowerCase();
@@ -209,6 +237,7 @@ export default function AdminUsers() {
 
   return (
     <div>
+      <Seo title="Users & Agents | Admin" />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold font-display">Users & Agents</h1>
         <Button variant="outline" size="sm" onClick={() => { refetch(); fetchAgentRequests(); }}>
@@ -255,12 +284,12 @@ export default function AdminUsers() {
               {filtered.map(p => (
                 <div
                   key={p.id}
-                  className={`bg-card rounded-2xl border ${p.is_active === false ? 'border-destructive/30 bg-destructive/5' : 'border-border/50'} p-5 hover:shadow-md transition-all cursor-pointer relative group`}
+                  className={`bg-card rounded-2xl border ${(p as any).is_active === false ? 'border-destructive/30 bg-destructive/5' : 'border-border/50'} p-5 hover:shadow-md transition-all cursor-pointer relative group`}
                   onClick={() => handleUserClick(p)}
                 >
                   <div className="absolute top-3 right-3 flex gap-2">
-                    <Badge variant={p.is_active === false ? "destructive" : "outline"} className="text-[10px]">
-                      {p.is_active === false ? "Inactive" : "Active"}
+                    <Badge variant={(p as any).is_active === false ? "destructive" : "outline"} className="text-[10px]">
+                      {(p as any).is_active === false ? "Inactive" : "Active"}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-3 mb-3">
@@ -336,11 +365,15 @@ export default function AdminUsers() {
                 <div
                   key={a.id}
                   className="bg-card rounded-2xl border border-border/50 p-5 relative hover:shadow-md transition-all cursor-pointer"
-                  onClick={() => handleUserClick(a.profile, 'Agent (Approved)', a)}
+                  onClick={(e) => {
+                    // Navigate to full profile if authorized
+                    // e.preventDefault();
+                    window.location.href = `/admin/agents/${a.user_id}`;
+                  }}
                 >
                   <div className="absolute top-3 right-3">
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
-                      <Eye className="h-4 w-4" />
+                      <ExternalLink className="h-4 w-4" />
                     </Button>
                   </div>
                   <div className="flex items-center gap-3 mb-3">

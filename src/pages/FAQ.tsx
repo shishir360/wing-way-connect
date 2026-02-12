@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import Seo from "@/components/Seo";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -39,6 +40,10 @@ export default function FAQ() {
 
   return (
     <Layout>
+      <Seo
+        title="FAQ"
+        description="Frequently Asked Questions about Wing Way Connect services, tracking, and policies."
+      />
       {/* Hero */}
       <section className="bg-hero-pattern text-primary-foreground py-12 md:py-16 relative overflow-hidden">
         {/* Floating 3D images - BIGGER */}
@@ -77,7 +82,7 @@ export default function FAQ() {
           animate={{ y: [0, -8, 0] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
         />
-        
+
         <div className="container-wacc relative">
           <div className="flex items-center gap-2 text-primary-foreground/70 text-sm mb-4">
             <Link to="/" className="hover:text-primary-foreground">Home</Link>
@@ -100,7 +105,7 @@ export default function FAQ() {
           animate={{ y: [0, -10, 0] }}
           transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
         />
-        
+
         <div className="container-wacc">
           <div className="max-w-3xl mx-auto">
             {/* Search */}
@@ -175,7 +180,7 @@ export default function FAQ() {
                 animate={{ y: [0, -8, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
               />
-              
+
               <h2 className="text-xl font-semibold mb-4 relative">Can't Find Your Answer?</h2>
               <p className="text-muted-foreground mb-6 relative">Contact us directly and we'll help you</p>
               <div className="flex flex-wrap justify-center gap-4 relative">

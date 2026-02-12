@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import Seo from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SmartPhoneInput } from "@/components/ui/phone-input";
@@ -214,6 +215,7 @@ export default function AirTicket() {
   if (bookingConfirmed && selectedFlight) {
     return (
       <Layout>
+        <Seo title="Flight Booked" description="Your flight booking has been confirmed with Wing Way Connect." />
         <section className="section-padding">
           <div className="container-wacc">
             <div className="max-w-2xl mx-auto text-center">
@@ -279,6 +281,10 @@ export default function AirTicket() {
 
   return (
     <Layout>
+      <Seo
+        title="Book Flights"
+        description="Find and book the best flight deals between Canada and Bangladesh. Affordable air tickets with top airlines."
+      />
       {/* Hero */}
       <section className="bg-hero-pattern text-primary-foreground py-12 md:py-16 relative overflow-hidden">
         {/* Floating 3D images - BIGGER */}

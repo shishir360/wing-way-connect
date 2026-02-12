@@ -1,10 +1,15 @@
 import Layout from "@/components/layout/Layout";
+import Seo from "@/components/Seo";
 import { Link } from "react-router-dom";
 import { CheckCircle, XCircle, AlertCircle } from "lucide-react";
 
 export default function Refund() {
   return (
     <Layout>
+      <Seo
+        title="Refund Policy"
+        description="Understand the Refund Policy of Wing Way Connect for cargo, courier, and air ticket services."
+      />
       {/* Hero */}
       <section className="bg-hero-pattern text-primary-foreground py-16 md:py-20">
         <div className="container-wacc">
@@ -29,7 +34,7 @@ export default function Refund() {
               <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
                 📦 Cargo & Courier Services
               </h2>
-              
+
               <div className="space-y-4">
                 <div className="flex items-start gap-3 p-4 bg-success/10 rounded-lg">
                   <CheckCircle className="h-5 w-5 text-success shrink-0 mt-0.5" />
@@ -38,7 +43,7 @@ export default function Refund() {
                     <p className="text-sm text-muted-foreground">Cancellation before package pickup - 100% refund</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start gap-3 p-4 bg-warning/10 rounded-lg">
                   <AlertCircle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
                   <div>
@@ -46,7 +51,7 @@ export default function Refund() {
                     <p className="text-sm text-muted-foreground">Cancellation after pickup but before shipping - 75% refund (25% processing fee)</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start gap-3 p-4 bg-destructive/10 rounded-lg">
                   <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
                   <div>
@@ -68,7 +73,7 @@ export default function Refund() {
               <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
                 ✈️ Air Ticket Booking
               </h2>
-              
+
               <div className="space-y-4">
                 <div className="flex items-start gap-3 p-4 bg-success/10 rounded-lg">
                   <CheckCircle className="h-5 w-5 text-success shrink-0 mt-0.5" />
@@ -77,7 +82,7 @@ export default function Refund() {
                     <p className="text-sm text-muted-foreground">Within 24 hours of booking (if departure is more than 7 days away)</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start gap-3 p-4 bg-warning/10 rounded-lg">
                   <AlertCircle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
                   <div>
@@ -85,7 +90,7 @@ export default function Refund() {
                     <p className="text-sm text-muted-foreground">After 24 hours - subject to airline's cancellation policy (fees vary by airline)</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start gap-3 p-4 bg-muted rounded-lg">
                   <AlertCircle className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
                   <div>
@@ -105,7 +110,7 @@ export default function Refund() {
             {/* How to Request Refund */}
             <div className="bg-card rounded-xl border border-border p-8">
               <h2 className="text-2xl font-bold text-foreground mb-6">How to Request a Refund</h2>
-              
+
               <ol className="list-decimal list-inside space-y-4 text-muted-foreground">
                 <li>
                   <strong className="text-foreground">Contact Us:</strong> Call or email our customer service team with your booking reference number

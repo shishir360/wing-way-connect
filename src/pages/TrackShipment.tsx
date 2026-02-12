@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import Seo from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Package, Plane, CheckCircle, Clock, MapPin, Phone } from "lucide-react";
@@ -204,6 +205,10 @@ export default function TrackShipment() {
 
   return (
     <Layout>
+      <Seo
+        title="Track Shipment"
+        description="Track your cargo or flight booking status in real-time with Wing Way Connect."
+      />
       {/* Hero */}
       <section className="bg-hero-pattern text-primary-foreground py-12 md:py-16 relative overflow-hidden">
         {/* Floating 3D images - BIGGER */}

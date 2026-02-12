@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAgent } from "@/hooks/useAgent";
 import { Truck, Package, ScanLine, LayoutDashboard, ArrowLeft, LogOut } from "lucide-react";
+import Seo from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +40,7 @@ export default function AgentLayout() {
 
   return (
     <div className="min-h-screen flex bg-secondary/30">
+      <Seo title="Agent Dashboard" description="Agent Dashboard - Wing Way Connect" />
       <aside className="w-64 bg-card border-r border-border hidden lg:flex flex-col">
         <div className="p-6 border-b border-border">
           <Link to="/" className="flex items-center gap-2">

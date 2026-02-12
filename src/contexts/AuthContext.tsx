@@ -28,36 +28,70 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // SAFETY TIMEOUT: Force loading false after 5 seconds
+    // SAFETY TIMEOUT RESTORED for reliability
     const safetyTimer = setTimeout(() => {
-      if (loading) {
-        console.warn("Auth loading timed out. Forcing completion.");
-        setLoading(false);
-      }
-    }, 5000);
+      setLoading(false);
+    }, 5000); // 5 seconds max wait
 
     // Helper to fetch role safely
     const fetchRole = async (userId: string) => {
+      console.log(`[AuthContext] Fetching role for ${userId}...`);
       try {
-        // 1. Try user_roles (handles multiple roles)
+        // 1. Check specific tables (Priority)
+
+        // Check Admin
+        console.log("[AuthContext] Checking 'admins' table...");
+        const { data: admin, error: adminError } = await supabase.from('admins' as any).select('id').eq('user_id', userId).maybeSingle();
+        if (adminError) console.error("[AuthContext] Admin check error:", adminError);
+        if (admin) {
+          console.log("[AuthContext] Found in 'admins' table. Role: admin");
+          return 'admin';
+        }
+
+        // Check Agent
+        console.log("[AuthContext] Checking 'agents' table...");
+        const { data: agent } = await supabase.from('agents' as any).select('id, is_approved').eq('user_id', userId).maybeSingle();
+        if (agent) {
+          if (agent.is_approved === false) {
+            console.warn("[AuthContext] Agent found but NOT approved.");
+            return 'user';
+          }
+          console.log("[AuthContext] Found in 'agents' table. Role: agent");
+          return 'agent';
+        }
+
+        // 2. Fallback to user_roles (Legacy/Compatibility)
+        console.log("[AuthContext] Checking 'user_roles' table...");
         const { data: roles } = await supabase
           .from('user_roles')
-          .select('role')
+          .select('role, is_approved')
           .eq('user_id', userId);
 
         if (roles && roles.length > 0) {
-          // Prioritize admin/agent roles
-          if (roles.some(r => r.role === 'admin' || r.role === 'super_admin')) return 'admin';
-          if (roles.some(r => r.role === 'agent')) return 'agent';
-          return roles[0].role;
+          console.log("[AuthContext] Found roles:", roles);
+
+          // Filter for APPROVED roles only
+          const approvedRoles = roles.filter(r => r.is_approved !== false);
+
+          if (approvedRoles.some(r => r.role === 'admin' || (r.role as any) === 'super_admin')) return 'admin';
+          if (approvedRoles.some(r => r.role === 'agent')) return 'agent';
+
+          if (approvedRoles.length > 0) return approvedRoles[0].role;
+
+          console.warn("[AuthContext] Roles found but none approved.");
+          return 'user';
         }
 
-        // 2. Fallback to profiles
-        const { data: profile } = await supabase.from('profiles').select('role').eq('id', userId).single();
-        return profile?.role || null;
+        // 3. Fallback to profiles
+        console.log("[AuthContext] Checking 'profiles' table...");
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single();
+        if (!profile) console.warn("[AuthContext] User has no profile entry!");
+        const profileRole = (profile as any)?.role;
+        console.log("[AuthContext] Profile role:", profileRole);
+        return profileRole || 'user'; // Default to 'user' if no specific role found
       } catch (err) {
-        console.error("Error fetching role:", err);
-        return null;
+        console.error("[AuthContext] Error fetching role:", err);
+        return 'user'; // Default to 'user' on error
       }
     };
 
@@ -78,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(session?.user ?? null);
           setRole(userRole);
           setLoading(false);
+          clearTimeout(safetyTimer); // Clear timer if successful
         }
       );
 
@@ -95,6 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      clearTimeout(safetyTimer); // Clear timer if successful
       return subscription;
     };
 

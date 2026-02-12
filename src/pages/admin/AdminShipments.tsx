@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import Seo from "@/components/Seo";
 import { useAdminShipments } from "@/hooks/useAdminData";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -154,6 +155,7 @@ export default function AdminShipments() {
 
   return (
     <div>
+      <Seo title="Manage Shipments | Admin" />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold font-display">Manage Shipments</h1>
         <div className="flex gap-2">
@@ -299,6 +301,13 @@ export default function AdminShipments() {
                             <p className="flex items-center gap-2 text-muted-foreground"><Phone className="h-3 w-3" /> {selectedShipment.sender_phone}</p>
                             <p className="flex items-center gap-2 text-muted-foreground"><MapPin className="h-3 w-3" /> {selectedShipment.pickup_address}</p>
                           </div>
+                          {selectedShipment.user_id && (
+                            <Button variant="link" size="sm" className="px-0 mt-2 h-auto text-primary" asChild>
+                              <a href={`/admin/users?search=${selectedShipment.sender_email || selectedShipment.sender_name}`} target="_blank" rel="noreferrer">
+                                View User Profile <ExternalLink className="h-3 w-3 ml-1" />
+                              </a>
+                            </Button>
+                          )}
                         </CardContent>
                       </Card>
 

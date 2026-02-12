@@ -3,6 +3,7 @@ import { useAdminShipments, useAdminBookings, useAdminProfiles } from "@/hooks/u
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import Seo from "@/components/Seo";
 
 export default function AdminOverview() {
   const { shipments, loading: sLoading } = useAdminShipments();
@@ -67,10 +68,12 @@ export default function AdminOverview() {
 
   return (
     <div className="space-y-6">
+      <Seo title="Admin Overview" description="Overview of platform activity." />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold font-display">Dashboard Overview</h1>
           <p className="text-muted-foreground">Welcome back towards your goals.</p>
+
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="gap-2">

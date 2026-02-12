@@ -1,0 +1,34 @@
+
+> vite_react_shadcn_ts@0.0.0 build
+> vite build
+
+[36mvite v5.4.19 [32mbuilding for production...[36m[39m
+transforming...
+Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+[32mΓ£ô[39m 22 modules transformed.
+x Build failed in 6.85s
+error during build:
+[vite:esbuild] Transform failed with 1 error:
+C:/Users/Mohammed Shishir/carog and corie/wing-way-connect/src/pages/admin/AdminAuth.tsx:105:14: ERROR: Unexpected "else"
+file: C:/Users/Mohammed Shishir/carog and corie/wing-way-connect/src/pages/admin/AdminAuth.tsx:105:14
+
+Unexpected "else"
+103|                  navigate("/admin");
+104|                }
+105|              } else {
+   |                ^
+106|                toast({ title: "Not an admin", description: "This account doesn't have admin privileges", variant: "destructive" });
+107|                await supabase.auth.signOut();
+
+    at failureErrorWithLog (C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\node_modules\esbuild\lib\main.js:1472:15)
+    at C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\node_modules\esbuild\lib\main.js:755:50
+    at responseCallbacks.<computed> (C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\node_modules\esbuild\lib\main.js:622:9)
+    at handleIncomingPacket (C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\node_modules\esbuild\lib\main.js:677:12)
+    at Socket.readFromStdout (C:\Users\Mohammed Shishir\carog and corie\wing-way-connect\node_modules\esbuild\lib\main.js:600:7)
+    at Socket.emit (node:events:524:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)

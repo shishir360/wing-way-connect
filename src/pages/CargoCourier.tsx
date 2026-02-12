@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import Seo from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SmartPhoneInput } from "@/components/ui/phone-input";
@@ -216,6 +217,7 @@ export default function CargoCourier() {
   if (submitted) {
     return (
       <Layout>
+        <Seo title="Booking Confirmed" description="Your cargo booking has been confirmed with Wing Way Connect." />
         <section className="section-padding">
           <div className="container-wacc">
             <div className="max-w-2xl mx-auto text-center">
@@ -263,6 +265,10 @@ export default function CargoCourier() {
 
   return (
     <Layout>
+      <Seo
+        title="Cargo & Courier Services"
+        description="Reliable and fast cargo and courier services between Canada and Bangladesh. Book your shipment today."
+      />
       {/* Hero */}
       <section className="bg-hero-pattern text-primary-foreground py-12 md:py-16 relative overflow-hidden">
         {/* Floating 3D images - BIGGER */}

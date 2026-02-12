@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { motion } from "framer-motion";
 import { User, Phone, Mail, MapPin, Globe, Save, ArrowLeft, Loader2 } from "lucide-react";
+import Seo from "@/components/Seo";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -53,6 +54,7 @@ export default function ProfilePage() {
     return (
       <Layout>
         <div className="min-h-[60vh] flex items-center justify-center">
+          <Seo title="My Profile" />
           <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full" />
         </div>
       </Layout>
@@ -61,6 +63,7 @@ export default function ProfilePage() {
 
   return (
     <Layout>
+      <Seo title="My Profile" />
       {/* Hero */}
       <section className="bg-hero-pattern text-primary-foreground py-10 md:py-14 relative overflow-hidden">
         <div className="container-wacc relative">
