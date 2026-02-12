@@ -75,7 +75,11 @@ export default function AgentAuth() {
         console.error("Edge Function Invoke Error:", error);
         throw new Error(error.message || "Signup failed");
       }
-      if (data.error) throw new Error(data.error);
+      console.log("[DEBUG] Edge Function Response Data:", data);
+      if (data.error) {
+        console.error("[DEBUG] Edge Function Logical Error:", data.error);
+        throw new Error(data.error);
+      }
 
       toast({ title: "Account Created!", description: "Logging you in..." });
 
