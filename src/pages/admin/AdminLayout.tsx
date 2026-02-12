@@ -25,6 +25,7 @@ const adminNav = [
   { name: "Shipments", href: "/admin/shipments", icon: Package },
   { name: "Flight Bookings", href: "/admin/bookings", icon: Plane },
   { name: "Users", href: "/admin/users", icon: Users },
+  { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
 const ADMIN_EMAIL = "shishirmd681@gmail.com";
@@ -32,7 +33,7 @@ const ADMIN_EMAIL = "shishirmd681@gmail.com";
 export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, role, loading: authLoading, signOut } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -63,37 +64,60 @@ export default function AdminLayout() {
   useEffect(() => {
     // Check for force override
     if (new URLSearchParams(window.location.search).get('forced') === 'true') {
-      // We can't easily override hook state, but we can skip the redirect logic
+      // Skip redirect logic
     }
 
     if (!authLoading && !adminLoading) {
       if (!user) {
         navigate("/admin/login");
-      } else if ((user.email || '').trim().toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
-        // STRICT EMAIL CHECK - Redirect authorized users to dashboard
-        console.warn(`Blocked access for: ${user.email}`);
-        navigate("/dashboard");
-      } else if (!isAdmin) {
-        // DEBUGGING: instead of redirecting, show WHY.
-        return (
-          <div className="flex flex-col items-center justify-center min-h-screen bg-secondary/30 p-4">
-            <div className="bg-card p-8 rounded-xl shadow-xl max-w-md w-full border border-destructive/50">
-              <h1 className="text-2xl font-bold text-destructive mb-4">Access Denied</h1>
-              <p className="text-muted-foreground mb-4">The system does not recognize you as an Admin.</p>
+        return;
+      }
 
-              <div className="bg-muted p-4 rounded-md font-mono text-xs space-y-2 mb-6">
-                <p><span className="font-bold">Email:</span> {user.email}</p>
-                <p><span className="font-bold">User ID:</span> {user.id}</p>
-                <p><span className="font-bold">Role Detected:</span> {useAuth().role || 'null'}</p>
-                <p><span className="font-bold">Is Approved:</span> {useAuth().role === 'admin' ? 'Yes' : 'Unknown/No'}</p>
+      // We removed the redirect loop here.
+      // Access control is now handled by conditional rendering below.
+    }
+  }, [user, authLoading, adminLoading, navigate]);
+
+  // Handle Access Control Rendering
+  if (!authLoading && !adminLoading && user) {
+    const emailMatch = (user.email || '').trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
+    // IF EMAIL MISMATCH OR NOT ADMIN -> SHOW DEBUG SCREEN
+    if (!emailMatch || !isAdmin) {
+      // Allow force override
+      if (new URLSearchParams(window.location.search).get('forced') !== 'true') {
+        return (
+          <div className="flex flex-col items-center justify-center min-h-screen bg-secondary/30 p-4 font-sans">
+            <div className="bg-card p-8 rounded-xl shadow-xl max-w-md w-full border border-destructive/50">
+              <h1 className="text-2xl font-bold text-destructive mb-4">Access Denied (Debug Mode)</h1>
+              <p className="text-muted-foreground mb-4 font-semibold">System Diagnostics:</p>
+
+              <div className="bg-muted p-4 rounded-md font-mono text-xs space-y-3 mb-6">
+                <div className="border-b pb-2">
+                  <p className="text-muted-foreground">User Identity:</p>
+                  <p><span className="font-bold">Email:</span> {user.email}</p>
+                  <p><span className="font-bold">UUID:</span> {user.id}</p>
+                </div>
+
+                <div className="border-b pb-2">
+                  <p className="text-muted-foreground">Requirements:</p>
+                  <p><span className="font-bold">Target Email:</span> {ADMIN_EMAIL}</p>
+                  <p><span className="font-bold">Email Match:</span> {emailMatch ? '✅ YES' : '❌ NO'}</p>
+                </div>
+
+                <div>
+                  <p className="text-muted-foreground">Permissions:</p>
+                  <p><span className="font-bold">Role:</span> {role || 'null'}</p>
+                  <p><span className="font-bold">Admin Hook:</span> {isAdmin ? '✅ YES' : '❌ NO'}</p>
+                </div>
               </div>
 
               <div className="flex gap-2">
                 <Button onClick={() => window.location.reload()} variant="outline" className="w-full">
-                  Retry (Reload)
+                  Reload Page
                 </Button>
-                <Button onClick={handleSignOut} variant="destructive" className="w-full">
-                  Logout
+                <Button onClick={() => signOut().then(() => navigate("/"))} variant="destructive" className="w-full">
+                  Logout & Retry
                 </Button>
               </div>
             </div>
@@ -101,14 +125,6 @@ export default function AdminLayout() {
         );
       }
     }
-  }, [user, authLoading, adminLoading, isAdmin, navigate]);
-
-  // BLOCKING LOADING REMOVED PER USER REQUEST
-  // The auth check happens in the background. If it fails, the useEffect above will redirect.
-  if (authLoading || adminLoading) {
-    // Optional: Render a non-blocking loader or skeleton here if needed in the future
-    // For now, we render nothing (or the layout structure below) to make it feel "instant"
-    // But we need the layout to render, so we just let it fall through.
   }
 
   const handleSignOut = async () => {

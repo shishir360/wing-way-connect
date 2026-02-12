@@ -11,9 +11,9 @@ import { useFlightBookings } from "@/hooks/useFlightBookings";
 import { useAdmin } from "@/hooks/useAdmin";
 import { motion } from "framer-motion";
 import {
-  Package, Plane, MapPin, Search, ArrowRight,
+  Package, Plane, Search, ArrowRight,
   TrendingUp, Settings, LogOut, Shield, Box,
-  Calendar, Clock, CheckCircle, ChevronRight
+  Calendar, CheckCircle, ChevronRight
 } from "lucide-react";
 
 // Import 3D images
@@ -32,16 +32,29 @@ const statusColors: Record<string, string> = {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, role, loading: authLoading, signOut } = useAuth();
+  // Hooks
   const { profile, loading: profileLoading } = useProfile();
-  const { shipments, activeShipments, loading: shipmentsLoading } = useShipments();
-  const { bookings, upcomingFlights, loading: bookingsLoading } = useFlightBookings();
+  const { activeShipments, shipments, loading: shipmentsLoading } = useShipments();
+  const { upcomingFlights, bookings, loading: bookingsLoading } = useFlightBookings();
   const { isAdmin } = useAdmin();
+
   const [trackId, setTrackId] = useState("");
 
   useEffect(() => {
-    if (!authLoading && !user) navigate("/auth");
-  }, [user, authLoading, navigate]);
+    if (!authLoading) {
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
+
+      if (role === 'admin') {
+        navigate("/admin");
+      } else if (role === 'agent') {
+        navigate("/agent");
+      }
+    }
+  }, [user, authLoading, role, navigate]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -68,7 +81,7 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <Seo title="Dashboard" description={`Welcome back, ${profile?.full_name || "User"} - Wing Way Connect Dashboard`} />
+      <Seo title="Dashboard - My Account" description="Manage your profile, shipments, and bookings with our secure user dashboard." />
       <div className="bg-muted/30 min-h-screen pb-20">
         {/* Premium Hero Section */}
         <section className="bg-[#0f172a] text-white pt-10 pb-20 relative overflow-hidden rounded-b-[3rem]">
@@ -206,7 +219,7 @@ export default function Dashboard() {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold flex items-center gap-2">
-                  <Package className="h-5 w-5 text-primary" /> Active Shipments
+                  <Package className="h-5 w-5 text-primary" /> My Recent Shipments
                 </h2>
                 {activeShipments.length > 0 && <Link to="/dashboard/shipments" className="text-sm text-primary font-medium hover:underline">View All</Link>}
               </div>
@@ -226,9 +239,9 @@ export default function Dashboard() {
                         <div>
                           <p className="font-bold text-lg">{shipment.tracking_id}</p>
                           <p className="text-sm text-muted-foreground flex items-center gap-1">
-                            {shipment.route === 'bd-to-ca' ? '🇧🇩 BD' : '🇨🇦 CA'}
+                            {shipment.from_city || 'Origin'}
                             <ArrowRight className="h-3 w-3" />
-                            {shipment.route === 'bd-to-ca' ? '🇨🇦 CA' : '🇧🇩 BD'}
+                            {shipment.to_city || 'Destination'}
                           </p>
                         </div>
                       </div>
@@ -237,8 +250,8 @@ export default function Dashboard() {
                         <span className={`px-3 py-1 rounded-full text-xs font-bold border ${statusColors[shipment.status] || "bg-gray-100/50 text-gray-600 border-gray-200"}`}>
                           {shipment.status.replace('_', ' ').toUpperCase()}
                         </span>
-                        <Link to={`/track-shipment?id=${shipment.tracking_id}`} className="text-sm text-primary flex items-center hover:underline opacity-0 group-hover:opacity-100 transition-opacity">
-                          Track <ChevronRight className="h-4 w-4" />
+                        <Link to={`/track-shipment?id=${shipment.tracking_id}`} className="text-sm text-primary flex items-center hover:underline opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                          Track Status <ChevronRight className="h-4 w-4" />
                         </Link>
                       </div>
                     </div>
@@ -247,8 +260,8 @@ export default function Dashboard() {
               ) : (
                 <div className="bg-white dark:bg-card rounded-2xl p-8 border border-border/50 text-center">
                   <img src={box3D} className="w-20 mx-auto opacity-50 mb-4" alt="Empty" />
-                  <p className="text-muted-foreground">No active shipments</p>
-                  <Button variant="link" asChild><Link to="/cargo-courier">Book a shipment</Link></Button>
+                  <p className="text-muted-foreground">You haven't placed any shipments yet.</p>
+                  <Button variant="link" asChild><Link to="/cargo-courier">Book your first shipment</Link></Button>
                 </div>
               )}
             </div>

@@ -6,6 +6,7 @@ export interface Shipment {
   id: string;
   user_id: string;
   tracking_id: string;
+  short_id?: string | null;
   route: 'bd-to-ca' | 'ca-to-bd';
   status: 'pending' | 'pickup_scheduled' | 'picked_up' | 'in_transit' | 'customs' | 'out_for_delivery' | 'delivered' | 'cancelled';
   cargo_type: string | null;
@@ -73,11 +74,11 @@ export function useShipments() {
       const { data, error } = await supabase
         .from('shipments')
         .select('*')
-        .eq('user_id', user.id)
+        .or(`user_id.eq.${user.id},sender_email.eq.${user.email}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setShipments(data as Shipment[]);
+      setShipments((data || []) as Shipment[]);
     } catch (error) {
       console.error('Error fetching shipments:', error);
     } finally {
@@ -93,9 +94,9 @@ export function useShipments() {
     return shipments.filter(s => s.status === 'delivered');
   };
 
-  return { 
-    shipments, 
-    loading, 
+  return {
+    shipments,
+    loading,
     refetch: fetchShipments,
     activeShipments: getActiveShipments(),
     deliveredShipments: getDeliveredShipments()

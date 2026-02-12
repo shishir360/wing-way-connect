@@ -55,7 +55,7 @@ export function useFlightBookings() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setBookings(data as FlightBooking[]);
+      setBookings((data || []) as FlightBooking[]);
     } catch (error) {
       console.error('Error fetching flight bookings:', error);
     } finally {
@@ -73,9 +73,9 @@ export function useFlightBookings() {
     return bookings.filter(b => b.departure_date < today || b.status === 'completed');
   };
 
-  return { 
-    bookings, 
-    loading, 
+  return {
+    bookings,
+    loading,
     refetch: fetchBookings,
     upcomingFlights: getUpcomingFlights(),
     pastFlights: getPastFlights()

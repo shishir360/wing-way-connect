@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Search, RefreshCw, QrCode, ScanLine, Printer, Package, MapPin, Phone, User, Calendar, ExternalLink, X } from "lucide-react";
+import { Search, RefreshCw, ScanLine } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import QRGenerator from "@/components/qr/QRGenerator";
 import QRScanner from "@/components/qr/QRScanner";
@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import ShipmentDetailsDialog from "@/components/admin/ShipmentDetailsDialog";
 
 const shipmentStatuses = [
   "pending", "pickup_scheduled", "picked_up", "in_transit",
@@ -41,6 +42,7 @@ export default function AdminShipments() {
   const filtered = shipments.filter(s => {
     const matchesSearch = !search ||
       s.tracking_id.toLowerCase().includes(search.toLowerCase()) ||
+      (s.short_id || "").toLowerCase().includes(search.toLowerCase()) ||
       (s.sender_name || "").toLowerCase().includes(search.toLowerCase()) ||
       (s.receiver_name || "").toLowerCase().includes(search.toLowerCase());
     const matchesFilter = filter === "all" || s.status === filter;
@@ -136,7 +138,7 @@ export default function AdminShipments() {
         const { data: remoteShipment } = await supabase
           .from('shipments')
           .select('*')
-          .eq('tracking_id', trackingId)
+          .or(`tracking_id.eq.${trackingId},short_id.eq.${trackingId}`)
           .maybeSingle();
 
         if (remoteShipment) {
@@ -155,7 +157,7 @@ export default function AdminShipments() {
 
   return (
     <div>
-      <Seo title="Manage Shipments | Admin" />
+      <Seo title="Manage Shipments" description="Add, update, and track all shipments in the system." />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold font-display">Manage Shipments</h1>
         <div className="flex gap-2">
@@ -196,7 +198,7 @@ export default function AdminShipments() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/50 text-left text-muted-foreground">
-                  <th className="p-4">Tracking ID</th>
+                  <th className="p-4">Tracking ID / PIN</th>
                   <th className="p-4">Route</th>
                   <th className="p-4">Sender</th>
                   <th className="p-4">Receiver</th>
@@ -213,7 +215,10 @@ export default function AdminShipments() {
                     className="border-b border-border/50 hover:bg-muted/30 cursor-pointer transition-colors"
                     onClick={() => handleRowClick(s)}
                   >
-                    <td className="p-4 font-medium text-primary">{s.tracking_id}</td>
+                    <td className="p-4">
+                      <div className="font-medium text-primary">{s.tracking_id}</div>
+                      {s.short_id && <div className="text-xs font-mono text-muted-foreground">PIN: {s.short_id}</div>}
+                    </td>
                     <td className="p-4">{s.route === 'bd-to-ca' ? '🇧🇩→🇨🇦' : '🇨🇦→🇧🇩'}</td>
                     <td className="p-4">
                       <div className="font-medium">{s.sender_name}</div>
@@ -234,17 +239,29 @@ export default function AdminShipments() {
                       </Select>
                     </td>
                     <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                      <Select
-                        value={(s as any).assigned_agent || "none"}
-                        onValueChange={(v) => handleAssignAgent(s.id, v)}
-                        onOpenChange={() => { if (agents.length === 0) fetchAgents(); }}
-                      >
-                        <SelectTrigger className="w-32 h-8 text-xs"><SelectValue placeholder="Assign" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
-                          {agents.map(a => (<SelectItem key={a.user_id} value={a.user_id}>{a.full_name || a.email}</SelectItem>))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center gap-2">
+                        <Select
+                          value={(s as any).assigned_agent || "none"}
+                          onValueChange={(v) => handleAssignAgent(s.id, v)}
+                          onOpenChange={() => { if (agents.length === 0) fetchAgents(); }}
+                        >
+                          <SelectTrigger className="w-24 h-8 text-xs"><SelectValue placeholder="Assign" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {agents.map(a => (<SelectItem key={a.user_id} value={a.user_id}>{a.full_name || a.email}</SelectItem>))}
+                          </SelectContent>
+                        </Select>
+                        {(s as any).assigned_agent && (
+                          <a
+                            href={`/admin/agents/${(s as any).assigned_agent}`}
+                            className="p-1.5 rounded-md hover:bg-muted text-primary transition-colors"
+                            title="View Agent Profile"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <ScanLine className="h-4 w-4" />
+                          </a>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -258,172 +275,11 @@ export default function AdminShipments() {
       )}
 
       {/* DETAILED SHIPMENT DIALOG */}
-      <Dialog open={!!selectedShipment} onOpenChange={(open) => !open && setSelectedShipment(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 gap-0">
-          {selectedShipment && (
-            <>
-              <DialogHeader className="p-6 pb-2 border-b bg-muted/20">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-                      {selectedShipment.tracking_id}
-                      <StatusBadge status={selectedShipment.status} />
-                    </DialogTitle>
-                    <p className="text-muted-foreground mt-1 flex items-center gap-2">
-                      <Package className="h-4 w-4" />
-                      {selectedShipment.cargo_type || "General Cargo"} • {selectedShipment.weight} kg • {selectedShipment.packages} Pkg(s)
-                    </p>
-                  </div>
-                  <QRGenerator shipment={selectedShipment} />
-                </div>
-              </DialogHeader>
-
-              <Tabs defaultValue="details" className="w-full">
-                <TabsList className="w-full justify-start px-6 pt-2 bg-muted/20 rounded-none border-b h-auto">
-                  <TabsTrigger value="details" className="pb-3 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none">Details</TabsTrigger>
-                  <TabsTrigger value="timeline" className="pb-3 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none">Timeline</TabsTrigger>
-                  <TabsTrigger value="print" className="pb-3 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none">Labels & Print</TabsTrigger>
-                </TabsList>
-
-                <div className="p-6">
-                  <TabsContent value="details" className="space-y-6 mt-0">
-                    <div className="grid md:grid-cols-2 gap-6">
-                      {/* Sender */}
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                            <User className="h-4 w-4" /> Sender Information
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="font-semibold text-lg">{selectedShipment.sender_name}</p>
-                          <div className="space-y-1 mt-2 text-sm">
-                            <p className="flex items-center gap-2 text-muted-foreground"><Phone className="h-3 w-3" /> {selectedShipment.sender_phone}</p>
-                            <p className="flex items-center gap-2 text-muted-foreground"><MapPin className="h-3 w-3" /> {selectedShipment.pickup_address}</p>
-                          </div>
-                          {selectedShipment.user_id && (
-                            <Button variant="link" size="sm" className="px-0 mt-2 h-auto text-primary" asChild>
-                              <a href={`/admin/users?search=${selectedShipment.sender_email || selectedShipment.sender_name}`} target="_blank" rel="noreferrer">
-                                View User Profile <ExternalLink className="h-3 w-3 ml-1" />
-                              </a>
-                            </Button>
-                          )}
-                        </CardContent>
-                      </Card>
-
-                      {/* Receiver */}
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                            <User className="h-4 w-4" /> Receiver Information
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="font-semibold text-lg">{selectedShipment.receiver_name}</p>
-                          <div className="space-y-1 mt-2 text-sm">
-                            <p className="flex items-center gap-2 text-muted-foreground"><Phone className="h-3 w-3" /> {selectedShipment.receiver_phone}</p>
-                            <p className="flex items-center gap-2 text-muted-foreground"><MapPin className="h-3 w-3" /> {selectedShipment.delivery_address}</p>
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      {/* Shipment Info */}
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                            <Package className="h-4 w-4" /> Shipment Info
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <p className="text-muted-foreground">Route</p>
-                            <p className="font-medium">{selectedShipment.route === 'bd-to-ca' ? 'Bangladesh → Canada' : 'Canada → Bangladesh'}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Contents</p>
-                            <p className="font-medium">{selectedShipment.contents}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Total Cost</p>
-                            <p className="font-bold text-primary text-lg">${selectedShipment.total_cost || 0}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">From/To</p>
-                            <p className="font-medium">{selectedShipment.from_city} → {selectedShipment.to_city}</p>
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                            Other Details
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <p className="text-muted-foreground">Insurance</p>
-                            <p className="font-medium">{selectedShipment.has_insurance ? 'Yes' : 'No'}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Fragile</p>
-                            <p className="font-medium">{selectedShipment.is_fragile ? 'Yes' : 'No'}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Service Type</p>
-                            <p className="font-medium capitalize">{selectedShipment.service_type}</p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="timeline" className="mt-0">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Tracking History</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-6">
-                          {timeline.length > 0 ? timeline.map((event, i) => (
-                            <div key={event.id} className="flex gap-4 relative">
-                              <div className="flex flex-col items-center">
-                                <div className={`w-3 h-3 rounded-full ${i === 0 ? 'bg-primary' : 'bg-muted-foreground/30'} z-10`} />
-                                {i !== timeline.length - 1 && <div className="w-0.5 h-full bg-border absolute top-3" />}
-                              </div>
-                              <div className="pb-4">
-                                <p className="font-medium leading-none">{event.status}</p>
-                                <p className="text-sm text-muted-foreground mt-1">{new Date(event.event_time).toLocaleString()}</p>
-                                <p className="text-sm mt-1">{event.description}</p>
-                              </div>
-                            </div>
-                          )) : (
-                            <p className="text-center text-muted-foreground py-4">No history available yet.</p>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-
-                  <TabsContent value="print" className="mt-0">
-                    <div className="flex flex-col items-center justify-center py-8">
-                      <QRGenerator shipment={selectedShipment} />
-                      <p className="text-sm text-muted-foreground mt-4">Scan to view shipment status</p>
-                      <Button className="mt-6" variant="outline">
-                        <Printer className="mr-2 h-4 w-4" /> Print Waybill
-                      </Button>
-                    </div>
-                  </TabsContent>
-                </div>
-              </Tabs>
-
-              <DialogFooter className="p-4 border-t bg-muted/20">
-                <Button variant="outline" onClick={() => setSelectedShipment(null)}>Close</Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      <ShipmentDetailsDialog
+        shipment={selectedShipment}
+        open={!!selectedShipment}
+        onOpenChange={(open) => !open && setSelectedShipment(null)}
+      />
     </div>
   );
 }

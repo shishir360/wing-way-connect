@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import type { FlightBooking } from "@/hooks/useFlightBookings";
 
 const bookingStatuses = ["pending", "confirmed", "cancelled", "completed"];
 const statusLabels: Record<string, string> = {
@@ -26,16 +27,17 @@ export default function AdminBookings() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [updating, setUpdating] = useState<string | null>(null);
-  const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [selectedBooking, setSelectedBooking] = useState<FlightBooking | null>(null);
   const [bookerProfile, setBookerProfile] = useState<any>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const { toast } = useToast();
 
   const filtered = bookings.filter(b => {
+    const term = search.toLowerCase();
     const matchesSearch = !search ||
-      b.booking_ref.toLowerCase().includes(search.toLowerCase()) ||
-      b.from_city.toLowerCase().includes(search.toLowerCase()) ||
-      b.to_city.toLowerCase().includes(search.toLowerCase());
+      b.booking_ref.toLowerCase().includes(term) ||
+      b.from_city.toLowerCase().includes(term) ||
+      b.to_city.toLowerCase().includes(term);
     const matchesFilter = filter === "all" || b.status === filter;
     return matchesSearch && matchesFilter;
   });
@@ -45,8 +47,10 @@ export default function AdminBookings() {
     try {
       await updateBookingStatus(id, newStatus);
       toast({ title: "Updated", description: `${ref} → ${statusLabels[newStatus]}` });
+
+      // Update local state for selected booking if it's open
       if (selectedBooking && selectedBooking.id === id) {
-        setSelectedBooking({ ...selectedBooking, status: newStatus });
+        setSelectedBooking({ ...selectedBooking, status: newStatus } as FlightBooking);
       }
     } catch (e: any) {
       toast({ title: "Failed", description: e.message, variant: "destructive" });
@@ -55,21 +59,28 @@ export default function AdminBookings() {
     }
   };
 
-  const handleRowClick = async (booking: any) => {
+  const handleRowClick = async (booking: FlightBooking) => {
     setSelectedBooking(booking);
-    setLoadingProfile(true);
     setBookerProfile(null);
 
     if (booking.user_id) {
-      const { data } = await supabase.from('profiles').select('*').eq('id', booking.user_id).single();
-      setBookerProfile(data);
+      setLoadingProfile(true);
+      try {
+        const { data, error } = await supabase.from('profiles').select('*').eq('id', booking.user_id).single();
+        if (!error && data) {
+          setBookerProfile(data);
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      } finally {
+        setLoadingProfile(false);
+      }
     }
-    setLoadingProfile(false);
   };
 
   return (
     <div>
-      <Seo title="Manage Bookings | Admin" />
+      <Seo title="Manage Bookings" description="View and manage all flight bookings." />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold font-display">Manage Bookings</h1>
         <Button variant="outline" size="sm" onClick={refetch}>
@@ -122,8 +133,8 @@ export default function AdminBookings() {
                     </td>
                     <td className="p-4">{b.from_city} → {b.to_city}</td>
                     <td className="p-4">{new Date(b.departure_date).toLocaleDateString()}</td>
-                    <td className="p-4 text-center">{b.adults + b.children || b.passengers || 1}</td>
-                    <td className="p-4 capitalize">{b.cabin_class || b.class}</td>
+                    <td className="p-4 text-center">{b.adults + (b.children || 0)}</td>
+                    <td className="p-4 capitalize">{b.cabin_class}</td>
                     <td className="p-4">
                       <Badge variant={
                         b.status === 'confirmed' ? 'default' :
@@ -182,7 +193,7 @@ export default function AdminBookings() {
               <div className="grid md:grid-cols-2 gap-6 p-4 bg-muted/30 rounded-xl border border-border/50">
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">From</p>
-                  <p className="text-xl font-bold">{selectedBooking.from_city || selectedBooking.departure_city}</p>
+                  <p className="text-xl font-bold">{selectedBooking.from_city}</p>
                   <p className="text-sm text-muted-foreground flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
                     {new Date(selectedBooking.departure_date).toLocaleDateString()}
@@ -190,7 +201,7 @@ export default function AdminBookings() {
                 </div>
                 <div className="space-y-1 md:text-right">
                   <p className="text-sm text-muted-foreground">To</p>
-                  <p className="text-xl font-bold">{selectedBooking.to_city || selectedBooking.arrival_city}</p>
+                  <p className="text-xl font-bold">{selectedBooking.to_city}</p>
                   {selectedBooking.return_date && (
                     <p className="text-sm text-muted-foreground flex items-center gap-1 md:justify-end">
                       <Calendar className="h-3 w-3" />
@@ -212,11 +223,11 @@ export default function AdminBookings() {
                 </div>
                 <div className="p-3 bg-card rounded-lg border">
                   <p className="text-xs text-muted-foreground mb-1">Class</p>
-                  <p className="font-semibold capitalize">{selectedBooking.cabin_class || selectedBooking.class || "Economy"}</p>
+                  <p className="font-semibold capitalize">{selectedBooking.cabin_class || "Economy"}</p>
                 </div>
                 <div className="p-3 bg-card rounded-lg border">
                   <p className="text-xs text-muted-foreground mb-1">Passengers</p>
-                  <p className="font-semibold">{selectedBooking.adults + (selectedBooking.children || 0) || selectedBooking.passengers} Person(s)</p>
+                  <p className="font-semibold">{selectedBooking.adults + (selectedBooking.children || 0)} Person(s)</p>
                 </div>
               </div>
 

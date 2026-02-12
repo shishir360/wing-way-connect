@@ -13,9 +13,10 @@ import Seo from "@/components/Seo";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, role, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading, updateProfile } = useProfile();
 
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     full_name: "",
     phone: "",
@@ -23,13 +24,21 @@ export default function ProfilePage() {
     city: "",
     country: "Canada",
   });
-  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
+    if (!authLoading) {
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
+
+      if (role === 'admin') {
+        navigate("/admin");
+      } else if (role === 'agent') {
+        navigate("/agent");
+      }
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, role, navigate]);
 
   useEffect(() => {
     if (profile) {
@@ -63,7 +72,10 @@ export default function ProfilePage() {
 
   return (
     <Layout>
-      <Seo title="My Profile" />
+      <Seo
+        title="My Profile"
+        description="View and update your personal account information and preferences."
+      />
       {/* Hero */}
       <section className="bg-hero-pattern text-primary-foreground py-10 md:py-14 relative overflow-hidden">
         <div className="container-wacc relative">

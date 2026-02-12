@@ -8,7 +8,7 @@ export default function Refund() {
     <Layout>
       <Seo
         title="Refund Policy"
-        description="Understand the Refund Policy of Wing Way Connect for cargo, courier, and air ticket services."
+        description="Understand our refund policies for shipments and bookings."
       />
       {/* Hero */}
       <section className="bg-hero-pattern text-primary-foreground py-16 md:py-20">

@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import Seo from "@/components/Seo";
 import { useAdminProfiles } from "@/hooks/useAdminData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, RefreshCw, User, ShieldCheck, Truck, CheckCircle, XCircle, Eye, FileText, Download, Power, Ban, Briefcase, ExternalLink } from "lucide-react";
+import { Search, RefreshCw, User, ShieldCheck, Truck, CheckCircle, XCircle, Eye, FileText, Download, Ban, Briefcase, ExternalLink } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -33,12 +34,16 @@ interface AgentRequest {
 const statusOptions = [
   { value: "pickup", label: "Pickup Agent (Mark as Picked Up)" },
   { value: "handover", label: "Hub Agent (Mark as Handed Over)" },
-  { value: "checkpoint", label: "Transit Agent (Checkpoint Scan)" },
+  { value: "in_transit", label: "Transit Agent (Mark as In Transit)" },
+  { value: "customs", label: "Customs Agent (Mark as Customs Cleared)" },
+  { value: "checkpoint", label: "Checkpoint Agent (Checkpoint Scan)" },
+  { value: "out_for_delivery", label: "Delivery Driver (Mark as Out for Delivery)" },
   { value: "delivery", label: "Delivery Agent (Mark as Delivered)" }
 ];
 
 export default function AdminUsers() {
   const { profiles, loading, error, refetch } = useAdminProfiles();
+  const navigate = useNavigate();
   /* SEARCH PARAM SUPPORT */
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") || "");
@@ -56,8 +61,28 @@ export default function AdminUsers() {
 
   useEffect(() => {
     fetchAgentRequests();
-    if (searchParams.get("search")) setTab("users");
-  }, []);
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "users" || tabParam === "agents") {
+      setTab(tabParam as "users" | "agents");
+    } else if (searchParams.get("search")) {
+      setTab("users");
+    }
+
+    // Real-time subscription for Job Role updates
+    const channel = supabase
+      .channel('admin-users-roles')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'user_roles'
+      }, () => {
+        fetchAgentRequests();
+        toast({ title: "Data Updated", description: "Agent roles refreshed." });
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [searchParams]);
 
   const fetchAgentRequests = async () => {
     setLoadingAgents(true);
@@ -100,10 +125,18 @@ export default function AdminUsers() {
   };
 
   const handleUserClick = async (user: any, roleOverride?: string, roleObj?: AgentRequest) => {
+    // If it's a standard user (not an agent), navigate to full details page
+    const isAgent = roleOverride?.includes('Agent') || user.role === 'agent' || user.role === 'pending_agent';
+
+    if (!isAgent) {
+      window.location.href = `/admin/users/${user.id}`;
+      return;
+    }
+
     setSelectedUser({ ...user, role: roleOverride || user.role, wallet: agentWallets[user.id || user.user_id] });
     setSelectedAgentRole(roleObj || null);
 
-    if (roleOverride?.includes('Agent') || user.role === 'agent') {
+    if (isAgent) {
       await fetchAgentDocuments(user.user_id || user.id);
 
       // If we didn't receive the roleObj (e.g. from Users tab), try to find it
@@ -118,24 +151,45 @@ export default function AdminUsers() {
     setIsDetailsOpen(true);
   };
 
-  const handleApprove = async (roleId: string) => {
-    const { error } = await supabase.from('user_roles').update({ is_approved: true }).eq('id', roleId);
-    if (error) {
-      toast({ title: "Failed", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Agent Approved ✅" });
-      fetchAgentRequests();
+  const handleApprove = async (roleId: string, userId: string) => {
+    // 1. Update user_roles
+    const { error: roleError } = await supabase.from('user_roles' as any).update({ is_approved: true }).eq('id', roleId);
+
+    if (roleError) {
+      toast({ title: "Failed", description: roleError.message, variant: "destructive" });
+      return;
     }
+
+    // 2. Update agents table
+    const { error: agentError } = await supabase.from('agents' as any).update({ is_approved: true, status: 'active' }).eq('user_id', userId);
+
+    if (agentError) {
+      console.error("Failed to update agents table:", agentError);
+      // Don't block UI but warn
+      toast({ title: "Agent Approved", description: "Role updated, but agents table sync failed." });
+    } else {
+      // 3. Update profile role to 'agent' just in case
+      await supabase.from('profiles' as any).update({ role: 'agent' }).eq('id', userId);
+      toast({ title: "Agent Approved ✅", description: "User is now an active agent." });
+    }
+
+    fetchAgentRequests();
   };
 
-  const handleReject = async (roleId: string) => {
-    const { error } = await supabase.from('user_roles').delete().eq('id', roleId);
+  const handleReject = async (roleId: string, userId: string) => {
+    // 1. Delete from user_roles
+    const { error } = await supabase.from('user_roles' as any).delete().eq('id', roleId);
     if (error) {
       toast({ title: "Failed", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Agent Rejected" });
-      fetchAgentRequests();
+      return;
     }
+
+    // 2. Update agents table to unapproved/rejected
+    // We don't verify error here as the agent row might not exist
+    await supabase.from('agents' as any).update({ is_approved: false, status: 'rejected' }).eq('user_id', userId);
+
+    toast({ title: "Agent Rejected" });
+    fetchAgentRequests();
   };
 
   const toggleUserActivation = async (userId: string, currentStatus: boolean) => {
@@ -160,7 +214,7 @@ export default function AdminUsers() {
     if (!selectedAgentRole) return;
     const { error } = await supabase
       .from('user_roles')
-      .update({ designated_status: value === "none" ? null : value })
+      .update({ designated_status: value === "none" ? null : value } as any)
       .eq('id', selectedAgentRole.id);
 
     if (error) {
@@ -169,6 +223,26 @@ export default function AdminUsers() {
       toast({ title: "Role Updated" });
       setSelectedAgentRole({ ...selectedAgentRole, designated_status: value === "none" ? null : value });
       fetchAgentRequests();
+    }
+  };
+
+  const updateDesignatedStatusInList = async (value: string, roleId: string) => {
+    // Optimistic update
+    const previous = agentRequests.find(a => a.id === roleId)?.designated_status;
+    setAgentRequests(prev => prev.map(a => a.id === roleId ? { ...a, designated_status: value === "none" ? null : value } : a));
+
+    const { error } = await supabase
+      .from('user_roles')
+      .update({ designated_status: value === "none" ? null : value } as any)
+      .eq('id', roleId);
+
+    if (error) {
+      console.error("Role update failed:", error);
+      toast({ title: "Failed to update role", description: "Database update failed. Reverting...", variant: "destructive" });
+      // Revert optimism
+      setAgentRequests(prev => prev.map(a => a.id === roleId ? { ...a, designated_status: previous } : a));
+    } else {
+      toast({ title: "Job Role Updated", description: "Agent's scanner will update automatically." });
     }
   };
 
@@ -189,7 +263,7 @@ export default function AdminUsers() {
 
     // 2. Create User Role Entry if not exists
     const { error: roleError } = await supabase
-      .from('user_roles')
+      .from('user_roles' as any)
       .insert({
         user_id: selectedUser.id,
         role: 'agent',
@@ -211,16 +285,20 @@ export default function AdminUsers() {
   const agentIds = new Set(agentRequests.map(a => a.user_id));
 
   const filtered = profiles.filter(p => {
-    // Exclude admins AND AGENTS (checked via Role OR Agent List)
+    // 1. Exclude Admins
     const pAny = p as any;
-    if (pAny.role === 'admin' || pAny.role === 'super_admin' || pAny.role === 'agent') return false;
+    if (pAny.role === 'admin' || pAny.role === 'super_admin') return false;
 
-    // Strict Filter: If they are in the agent list (pending OR approved), hide them from Users tab
-    if (agentIds.has(p.id)) return false;
+    // 2. Exclude Agents
+    // Check if explicitly marked as agent or exists in agent requests (pending or approved)
+    if (pAny.role === 'agent' || agentIds.has(p.id)) return false;
 
-    // Explicitly hide the main admin (handling typos like gmai.com vs gmail.com)
+    // 3. Exclude System Admin (Safety Check)
     const emailLower = (p.email || '').toLowerCase();
     if (emailLower.includes('shishirmd681')) return false;
+
+    // 4. Exclude anyone with Pending Agent role in profile (edge case)
+    if (pAny.role === 'pending_agent') return false;
 
     if (!search) return true;
     const q = search.toLowerCase();
@@ -237,7 +315,7 @@ export default function AdminUsers() {
 
   return (
     <div>
-      <Seo title="Users & Agents | Admin" />
+      <Seo title="Users & Agents" description="Manage all registered users and agents." />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold font-display">Users & Agents</h1>
         <Button variant="outline" size="sm" onClick={() => { refetch(); fetchAgentRequests(); }}>
@@ -343,10 +421,10 @@ export default function AdminUsers() {
                     </div>
                     <p className="text-sm text-muted-foreground mb-3">Phone: {a.profile?.phone || '-'}</p>
                     <div className="flex gap-2">
-                      <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white" onClick={(e) => { e.stopPropagation(); handleApprove(a.id); }}>
+                      <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white" onClick={(e) => { e.stopPropagation(); handleApprove(a.id, a.user_id); }}>
                         <CheckCircle className="h-4 w-4 mr-1" />Approve
                       </Button>
-                      <Button size="sm" variant="destructive" className="flex-1" onClick={(e) => { e.stopPropagation(); handleReject(a.id); }}>
+                      <Button size="sm" variant="destructive" className="flex-1" onClick={(e) => { e.stopPropagation(); handleReject(a.id, a.user_id); }}>
                         <XCircle className="h-4 w-4 mr-1" />Reject
                       </Button>
                     </div>
@@ -360,48 +438,70 @@ export default function AdminUsers() {
           {loadingAgents ? (
             <div className="flex justify-center py-12"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>
           ) : approvedAgents.length > 0 ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {approvedAgents.map(a => (
-                <div
-                  key={a.id}
-                  className="bg-card rounded-2xl border border-border/50 p-5 relative hover:shadow-md transition-all cursor-pointer"
-                  onClick={(e) => {
-                    // Navigate to full profile if authorized
-                    // e.preventDefault();
-                    window.location.href = `/admin/agents/${a.user_id}`;
-                  }}
-                >
-                  <div className="absolute top-3 right-3">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                      <ShieldCheck className="h-5 w-5 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold">{a.profile?.full_name || 'Unknown'}</p>
-                      <p className="text-xs text-muted-foreground">{a.profile?.email || '-'}</p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground">Phone: {a.profile?.phone || '-'}</p>
-
-                  {/* WALLET DISPLAY */}
-                  <div className="mt-2 text-xs font-mono bg-muted/50 p-1.5 rounded-md flex justify-between items-center">
-                    <span>Balance:</span>
-                    <span className={`font-bold ${(a as any).wallet?.balance < 0 ? 'text-destructive' : 'text-green-600'}`}>
-                      {(a as any).wallet?.currency || 'BDT'} {(a as any).wallet?.balance || '0.00'}
-                    </span>
-                  </div>
-
-                  {a.designated_status && (
-                    <Badge variant="outline" className="mt-2 text-[10px] capitalize">
-                      Job: {a.designated_status.replace('_', ' ')}
-                    </Badge>
-                  )}
-                </div>
-              ))}
+            <div className="bg-card rounded-xl border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Agent Name</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Job Role</TableHead>
+                    <TableHead>Wallet</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {approvedAgents.map(a => (
+                    <TableRow key={a.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/admin/agents/${a.user_id}`)}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
+                            <ShieldCheck className="h-4 w-4 text-green-600" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{a.profile?.full_name}</p>
+                            <p className="text-xs text-muted-foreground">{a.profile?.email}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{a.profile?.phone || '-'}</TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()} className="cursor-default">
+                        <Select
+                          value={a.designated_status || "none"}
+                          onValueChange={(val) => {
+                            updateDesignatedStatusInList(val, a.id);
+                          }}
+                        >
+                          <SelectTrigger className="h-8 w-[180px] bg-background">
+                            <SelectValue placeholder="Select Role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {statusOptions.map(opt => (
+                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`font-mono font-bold ${(a as any).wallet?.balance < 0 ? 'text-destructive' : 'text-green-600'}`}>
+                          {(a as any).wallet?.currency || 'BDT'} {(a as any).wallet?.balance || '0.00'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="capitalize">{a.profile?.status || "Offline"}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm" asChild onClick={(e) => e.stopPropagation()}>
+                          <a href={`/admin/agents/${a.user_id}`}>
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           ) : (
             <div className="bg-card rounded-xl border border-border/50 p-8 text-center text-muted-foreground">

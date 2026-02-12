@@ -52,8 +52,8 @@ export default function About() {
   return (
     <Layout>
       <Seo
-        title="About Us"
-        description="Learn about Wing Way Connect, our mission to bridge distances, and our team of experts dedicated to providing top-tier logistics and travel solutions."
+        title="About Us - Global Cargo & Air Freight"
+        description="Learn about our mission, experience, and commitment to safe and fast logistics solutions worldwide."
       />
       {/* Hero */}
       <section className="page-hero text-primary-foreground py-16 sm:py-20 lg:py-28 relative overflow-hidden">

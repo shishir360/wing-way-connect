@@ -282,8 +282,8 @@ export default function AirTicket() {
   return (
     <Layout>
       <Seo
-        title="Book Flights"
-        description="Find and book the best flight deals between Canada and Bangladesh. Affordable air tickets with top airlines."
+        title="Air Ticket Services"
+        description="Book reliable domestic and international air tickets with ease and competitive rates."
       />
       {/* Hero */}
       <section className="bg-hero-pattern text-primary-foreground py-12 md:py-16 relative overflow-hidden">

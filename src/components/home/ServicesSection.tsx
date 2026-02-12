@@ -7,7 +7,7 @@ const services = [
   {
     icon: Package,
     title: "Cargo & Courier",
-    description: "Send packages, documents, and cargo between Canada and Bangladesh with real-time tracking",
+    description: "Send packages, documents, and cargo between Canada and Bangladesh with real-time tracking.",
     badge: "Both Way Shipping",
     badgeColor: "bg-route-bd-ca/10 text-route-bd-ca border-route-bd-ca/20",
     link: "/cargo-courier",
@@ -17,7 +17,7 @@ const services = [
   {
     icon: Plane,
     title: "Air Ticket Booking",
-    description: "Book flights from Canada to Bangladesh with the best prices and hassle-free experience",
+    description: "Book flights from Canada to Bangladesh with the best prices and hassle-free experience.",
     badge: "Best Prices",
     badgeColor: "bg-cta/10 text-cta border-cta/20",
     link: "/air-ticket",
@@ -27,7 +27,7 @@ const services = [
   {
     icon: Globe,
     title: "International Shipping",
-    description: "Reliable shipping services with door-to-door delivery and insurance options",
+    description: "Reliable shipping services connecting Bangladesh with major Canadian cities.",
     badge: "Safe & Secure",
     badgeColor: "bg-primary/10 text-primary border-primary/20",
     link: "/services",
@@ -37,7 +37,7 @@ const services = [
   {
     icon: Zap,
     title: "Express Delivery",
-    description: "Fast delivery options for urgent shipments with priority handling",
+    description: "Fast track delivery between Dhaka and Toronto for urgent documents and parcels.",
     badge: "2-3 Days",
     badgeColor: "bg-route-ca-bd/10 text-route-ca-bd border-route-ca-bd/20",
     link: "/get-quote",
@@ -108,18 +108,18 @@ export default function ServicesSection() {
                 <div className="relative h-full bg-card rounded-2xl border border-border/50 p-6 sm:p-7 transition-all duration-500 hover:-translate-y-2 hover:shadow-premium-lg hover:border-primary/20 overflow-hidden">
                   {/* Gradient background */}
                   <div className={`absolute inset-0 bg-gradient-to-br ${service.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-                  
+
                   <div className="relative">
                     {/* Icon */}
                     <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-5 group-hover:bg-primary group-hover:scale-110 transition-all duration-500">
                       <Icon className="h-7 w-7 text-primary group-hover:text-primary-foreground transition-colors duration-500" />
                     </div>
-                    
+
                     {/* Badge */}
                     <span className={`inline-flex text-xs font-semibold px-3 py-1.5 rounded-full mb-4 border ${service.badgeColor}`}>
                       {service.badge}
                     </span>
-                    
+
                     {/* Content */}
                     <h3 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors">
                       {service.title}
@@ -127,7 +127,7 @@ export default function ServicesSection() {
                     <p className="text-muted-foreground text-sm leading-relaxed mb-5">
                       {service.description}
                     </p>
-                    
+
                     {/* Link */}
                     <Button
                       asChild

@@ -7,16 +7,19 @@ import { useRef } from "react";
 // Import 3D images
 import box3D from "@/assets/box-3d.png";
 import airplane3D from "@/assets/airplane-3d.png";
+import cargoPlane3D from "@/assets/cargo-plane-3d.png";
 import locationPin3D from "@/assets/location-pin-3d.png";
 import truck3D from "@/assets/truck-3d.png";
 import globe3D from "@/assets/globe-3d.png";
 import ship3D from "@/assets/ship-3d.png";
+import containerShip3D from "@/assets/container-ship-3d.png";
 import passport3D from "@/assets/passport-3d.png";
 import clock3D from "@/assets/clock-3d.png";
 import flyingBox3D from "@/assets/flying-box-3d.png";
 import giftBox3D from "@/assets/gift-box-3d.png";
 import suitcase3D from "@/assets/suitcase-3d.png";
-import containerShip3D from "@/assets/container-ship-3d.png";
+import bdFlag3D from "@/assets/bangladesh-flag-3d.png";
+import caFlag3D from "@/assets/canada-flag-3d.png";
 
 const fadeInUp = {
   initial: { opacity: 0, y: 30 },
@@ -41,8 +44,8 @@ const stats = [
 // Floating 3D elements configuration - BIGGER IMAGES
 const floatingElements = [
   {
-    src: airplane3D,
-    alt: "Airplane",
+    src: cargoPlane3D,
+    alt: "Cargo Airplane",
     className: "absolute top-8 right-[3%] w-40 sm:w-52 md:w-72 lg:w-80 z-10",
     animate: { y: [0, -25, 0], rotate: [0, 5, 0], x: [0, 10, 0] },
     duration: 6,
@@ -65,7 +68,7 @@ const floatingElements = [
     delay: 1,
   },
   {
-    src: ship3D,
+    src: containerShip3D,
     alt: "Cargo Ship",
     className: "absolute bottom-20 left-[3%] w-40 sm:w-52 md:w-64 lg:w-80 z-10",
     animate: { y: [0, 10, 0], x: [0, 15, 0] },
@@ -130,8 +133,8 @@ const floatingElements = [
     delay: 2.2,
   },
   {
-    src: containerShip3D,
-    alt: "Container Ship",
+    src: ship3D,
+    alt: "Ship",
     className: "absolute bottom-16 left-[15%] w-40 sm:w-52 md:w-64 lg:w-80 z-10",
     animate: { y: [0, 8, 0], x: [0, -10, 0] },
     duration: 8,
@@ -156,24 +159,24 @@ export default function HeroSection() {
     <section ref={sectionRef} className="relative overflow-hidden min-h-[90vh] sm:min-h-[85vh] flex items-center">
       {/* Premium gradient background */}
       <div className="absolute inset-0 bg-hero-pattern" />
-      
+
       {/* Mesh overlay */}
       <div className="absolute inset-0 bg-hero-mesh opacity-50" />
-      
+
       {/* Animated gradient orbs */}
-      <motion.div 
+      <motion.div
         style={{ y: y1 }}
-        className="absolute top-1/4 -left-32 w-96 h-96 bg-gradient-radial from-blue-500/20 to-transparent rounded-full blur-3xl animate-float-slow" 
+        className="absolute top-1/4 -left-32 w-96 h-96 bg-gradient-radial from-blue-500/20 to-transparent rounded-full blur-3xl animate-float-slow"
       />
-      <motion.div 
+      <motion.div
         style={{ y: y2 }}
-        className="absolute bottom-1/4 -right-32 w-96 h-96 bg-gradient-radial from-emerald-500/15 to-transparent rounded-full blur-3xl animate-float-slow" 
+        className="absolute bottom-1/4 -right-32 w-96 h-96 bg-gradient-radial from-emerald-500/15 to-transparent rounded-full blur-3xl animate-float-slow"
       />
-      <motion.div 
+      <motion.div
         style={{ y: y3 }}
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-amber-500/10 to-transparent rounded-full blur-3xl" 
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-amber-500/10 to-transparent rounded-full blur-3xl"
       />
-      
+
       {/* Grid pattern */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTAgMGg0MHY0MEgweiIvPjwvZz48L2c+PC9zdmc+')] opacity-40" />
 
@@ -186,10 +189,10 @@ export default function HeroSection() {
             alt={element.alt}
             className={`${element.className} opacity-80 drop-shadow-2xl`}
             initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ 
-              opacity: 0.8, 
+            animate={{
+              opacity: 0.8,
               scale: 1,
-              ...element.animate 
+              ...element.animate
             }}
             transition={{
               opacity: { duration: 0.8, delay: element.delay },
@@ -210,10 +213,10 @@ export default function HeroSection() {
             alt={element.alt}
             className={`${element.className} opacity-70 drop-shadow-xl`}
             initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ 
-              opacity: 0.7, 
+            animate={{
+              opacity: 0.7,
               scale: 1,
-              ...element.animate 
+              ...element.animate
             }}
             transition={{
               opacity: { duration: 0.8, delay: element.delay },
@@ -257,7 +260,7 @@ export default function HeroSection() {
           transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
         />
       </motion.div>
-      
+
       <div className="container-wacc relative py-16 sm:py-20 lg:py-28 z-20">
         <motion.div
           initial="initial"
@@ -268,12 +271,12 @@ export default function HeroSection() {
           {/* Trust badge */}
           <motion.div
             variants={fadeInUp}
-            className="inline-flex items-center gap-3 rounded-full bg-white/10 backdrop-blur-md px-5 py-2.5 text-sm font-medium text-white mb-8 border border-white/10"
+            className="inline-flex items-center gap-3 rounded-full bg-white/10 backdrop-blur-md px-5 py-2.5 text-sm font-medium text-white mb-8 border border-white/10 shadow-lg"
           >
-            <div className="flex items-center gap-1.5">
-              <span className="text-lg sm:text-xl">🇧🇩</span>
+            <div className="flex items-center gap-2">
+              <img src={bdFlag3D} alt="BD" className="h-6 w-auto drop-shadow-sm" />
               <Plane className="h-4 w-4 text-cta animate-plane-fly" />
-              <span className="text-lg sm:text-xl">🇨🇦</span>
+              <img src={caFlag3D} alt="Canada" className="h-6 w-auto drop-shadow-sm" />
             </div>
             <span className="h-4 w-px bg-white/20" />
             <span className="text-white/90">Safe • Trusted • Affordable</span>
@@ -284,95 +287,99 @@ export default function HeroSection() {
             variants={fadeInUp}
             className="text-4xl sm:text-5xl md:text-6xl lg:text-display-lg font-display font-bold tracking-tight text-white mb-6"
           >
-            <span className="block">Both Way</span>
+            <span className="block">Bangladesh - Canada</span>
             <span className="block mt-1 sm:mt-2">
-              <span className="text-gradient-gold">Shipping!</span>
+              <span className="text-gradient-gold">Cargo & Travel</span>
             </span>
           </motion.h1>
-          
+
           <motion.p
             variants={fadeInUp}
             className="text-lg sm:text-xl md:text-2xl text-white/80 mb-10 max-w-2xl mx-auto leading-relaxed"
           >
             Premium Cargo, Courier & Air Ticket Services
             <br className="hidden sm:block" />
-            <span className="text-white/60">between Canada and Bangladesh</span>
+            <span className="text-white/60">Connecting loved ones across the globe</span>
           </motion.p>
 
           {/* Visual flags with airplane */}
           <motion.div
             variants={fadeInUp}
-            className="flex items-center justify-center gap-6 sm:gap-10 mb-12"
+            className="flex items-center justify-center gap-8 sm:gap-14 mb-14"
           >
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center group cursor-pointer hover:scale-110 transition-transform duration-300">
               <div className="relative">
-                <span className="text-5xl sm:text-6xl md:text-7xl filter drop-shadow-lg">🇧🇩</span>
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full blur-sm" />
+                <img src={bdFlag3D} alt="Bangladesh Flag" className="h-24 sm:h-32 w-auto filter drop-shadow-2xl animate-float" />
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-20 h-2 bg-black/30 rounded-full blur-md" />
               </div>
-              <span className="text-sm sm:text-base mt-2 text-white/70 font-medium">Bangladesh</span>
+              <span className="text-base sm:text-lg mt-4 text-white font-bold tracking-wide">Bangladesh</span>
             </div>
-            
+
             <div className="flex items-center gap-3 sm:gap-4">
-              <div className="w-12 sm:w-20 h-px bg-gradient-to-r from-transparent via-white/40 to-white/40" />
+              <div className="w-12 sm:w-24 h-0.5 bg-gradient-to-r from-transparent via-white/50 to-white/50" />
               <div className="relative">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
-                  <Plane className="h-7 w-7 sm:h-8 sm:w-8 text-white animate-pulse-gentle" />
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-2xl shadow-primary/20">
+                  <Plane className="h-8 w-8 sm:h-10 sm:w-10 text-white animate-pulse-gentle" />
                 </div>
-                <div className="absolute inset-0 rounded-2xl animate-pulse-glow" />
+                <div className="absolute inset-0 rounded-full animate-pulse-glow" />
               </div>
-              <div className="w-12 sm:w-20 h-px bg-gradient-to-r from-white/40 via-white/40 to-transparent" />
+              <div className="w-12 sm:w-24 h-0.5 bg-gradient-to-r from-white/50 via-white/50 to-transparent" />
             </div>
-            
-            <div className="flex flex-col items-center">
+
+            <div className="flex flex-col items-center group cursor-pointer hover:scale-110 transition-transform duration-300">
               <div className="relative">
-                <span className="text-5xl sm:text-6xl md:text-7xl filter drop-shadow-lg">🇨🇦</span>
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full blur-sm" />
+                <img src={caFlag3D} alt="Canada Flag" className="h-24 sm:h-32 w-auto filter drop-shadow-2xl animate-float-delayed" />
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-20 h-2 bg-black/30 rounded-full blur-md" />
               </div>
-              <span className="text-sm sm:text-base mt-2 text-white/70 font-medium">Canada</span>
+              <span className="text-base sm:text-lg mt-4 text-white font-bold tracking-wide">Canada</span>
             </div>
           </motion.div>
 
           {/* Route CTA buttons */}
           <motion.div
             variants={fadeInUp}
-            className="grid sm:grid-cols-2 gap-4 max-w-xl mx-auto mb-10"
+            className="grid sm:grid-cols-2 gap-5 max-w-2xl mx-auto mb-12"
           >
             <Link to="/cargo-courier?route=bd-to-ca" className="group">
-              <div className="relative bg-route-bd-ca rounded-2xl p-5 sm:p-6 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
+              <div className="relative bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-5 sm:p-6 transition-all duration-500 hover:-translate-y-2 hover:bg-white/15 hover:border-cta/50 hover:shadow-2xl overflow-hidden group-hover:scale-[1.02]">
+                <div className="absolute inset-0 bg-gradient-to-br from-cta/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="relative">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-lg sm:text-xl font-bold text-white">Ship to Canada</span>
-                    <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                      <Plane className="h-5 w-5 text-white group-hover:translate-x-0.5 transition-transform" />
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-lg sm:text-xl font-bold text-white">From Bangladesh</span>
+                    <div className="w-10 h-10 rounded-full bg-cta/20 flex items-center justify-center border border-cta/30">
+                      <ArrowRight className="h-5 w-5 text-cta group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-white/80">
-                    <span className="text-lg">🇧🇩</span>
-                    <ArrowRight className="h-4 w-4" />
-                    <span className="text-lg">🇨🇦</span>
-                    <span className="ml-2 text-white/60">5-7 days</span>
+                  <div className="flex items-center gap-3">
+                    <img src={bdFlag3D} alt="BD" className="h-6 w-auto" />
+                    <div className="h-px flex-1 bg-white/20" />
+                    <Plane className="h-4 w-4 text-white/60" />
+                    <div className="h-px flex-1 bg-white/20" />
+                    <img src={caFlag3D} alt="CA" className="h-6 w-auto" />
                   </div>
+                  <p className="text-xs text-white/50 mt-3 text-right">To Canada • 5-7 Days</p>
                 </div>
               </div>
             </Link>
-            
+
             <Link to="/cargo-courier?route=ca-to-bd" className="group">
-              <div className="relative bg-route-ca-bd rounded-2xl p-5 sm:p-6 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
+              <div className="relative bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-5 sm:p-6 transition-all duration-500 hover:-translate-y-2 hover:bg-white/15 hover:border-cta/50 hover:shadow-2xl overflow-hidden group-hover:scale-[1.02]">
+                <div className="absolute inset-0 bg-gradient-to-br from-cta/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="relative">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-lg sm:text-xl font-bold text-white">Ship to Bangladesh</span>
-                    <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                      <Plane className="h-5 w-5 text-white -scale-x-100 group-hover:-translate-x-0.5 transition-transform" />
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-lg sm:text-xl font-bold text-white">From Canada</span>
+                    <div className="w-10 h-10 rounded-full bg-cta/20 flex items-center justify-center border border-cta/30">
+                      <ArrowRight className="h-5 w-5 text-cta group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-white/80">
-                    <span className="text-lg">🇨🇦</span>
-                    <ArrowRight className="h-4 w-4" />
-                    <span className="text-lg">🇧🇩</span>
-                    <span className="ml-2 text-white/60">5-7 days</span>
+                  <div className="flex items-center gap-3">
+                    <img src={caFlag3D} alt="CA" className="h-6 w-auto" />
+                    <div className="h-px flex-1 bg-white/20" />
+                    <Plane className="h-4 w-4 text-white/60 transform rotate-180" />
+                    <div className="h-px flex-1 bg-white/20" />
+                    <img src={bdFlag3D} alt="BD" className="h-6 w-auto" />
                   </div>
+                  <p className="text-xs text-white/50 mt-3 text-right">To Bangladesh • 5-7 Days</p>
                 </div>
               </div>
             </Link>

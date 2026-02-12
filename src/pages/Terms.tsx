@@ -6,8 +6,8 @@ export default function Terms() {
   return (
     <Layout>
       <Seo
-        title="Terms & Conditions"
-        description="Read the Terms and Conditions for using Wing Way Connect cargo, courier, and travel services."
+        title="Terms of Service"
+        description="Read our terms of service for using cargo, freight, and air ticket services."
       />
       {/* Hero */}
       <section className="bg-hero-pattern text-primary-foreground py-16 md:py-20">

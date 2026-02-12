@@ -102,8 +102,8 @@ export default function Services() {
   return (
     <Layout>
       <Seo
-        title="Our Services"
-        description="Explore our wide range of services including Air Ticketing, Cargo, Courier, Visa Assistance, and Holiday Packages."
+        title="Services - Cargo, Freight & Air Tickets"
+        description="Explore our professional logistics, air cargo, freight, and air ticket services for global shipments."
       />
       {/* Hero */}
       <section className="bg-hero-pattern text-primary-foreground py-16 md:py-20 relative overflow-hidden">

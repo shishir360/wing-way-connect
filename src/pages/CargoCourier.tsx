@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { generateShortId } from "@/utils/generateShortId";
 
 // Import 3D images
 import box3D from "@/assets/box-3d.png";
@@ -108,12 +109,16 @@ export default function CargoCourier() {
 
       const trackingId = trackingData || `WC-SH-${Math.floor(10000 + Math.random() * 90000)}`;
 
+      // Generate Short ID (PIN)
+      const shortId = generateShortId();
+
       // Insert shipment to database
       const { error: insertError } = await supabase
         .from('shipments')
         .insert({
           user_id: user.id,
           tracking_id: trackingId,
+          short_id: shortId,
           route: bookingRoute,
           status: 'pending',
           cargo_type: data.cargoType || null,
@@ -267,7 +272,7 @@ export default function CargoCourier() {
     <Layout>
       <Seo
         title="Cargo & Courier Services"
-        description="Reliable and fast cargo and courier services between Canada and Bangladesh. Book your shipment today."
+        description="Fast and secure cargo and courier delivery services with door-to-door international shipping."
       />
       {/* Hero */}
       <section className="bg-hero-pattern text-primary-foreground py-12 md:py-16 relative overflow-hidden">

@@ -99,7 +99,7 @@ export default function TrackShipment() {
       const { data: shipment } = await supabase
         .from('shipments')
         .select(`*, shipment_timeline (*)`)
-        .eq('tracking_id', searchId)
+        .or(`tracking_id.eq.${searchId},short_id.eq.${searchId}`)
         .maybeSingle();
 
       if (shipment) {
@@ -207,7 +207,7 @@ export default function TrackShipment() {
     <Layout>
       <Seo
         title="Track Shipment"
-        description="Track your cargo or flight booking status in real-time with Wing Way Connect."
+        description="Check the status of your shipment instantly with your unique tracking ID."
       />
       {/* Hero */}
       <section className="bg-hero-pattern text-primary-foreground py-12 md:py-16 relative overflow-hidden">

@@ -97,7 +97,7 @@ export default function Contact() {
     <Layout>
       <Seo
         title="Contact Us"
-        description="Get in touch with Wing Way Connect in Canada and Bangladesh. We are here to assist with your logistics and travel needs."
+        description="Get in touch with our team for inquiries, support, or logistics assistance."
       />
       {/* Hero */}
       <section className="page-hero text-primary-foreground py-14 sm:py-18 lg:py-22 relative overflow-hidden">

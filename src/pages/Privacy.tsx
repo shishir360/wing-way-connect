@@ -7,7 +7,7 @@ export default function Privacy() {
     <Layout>
       <Seo
         title="Privacy Policy"
-        description="Read the Privacy Policy of Wing Way Connect to understand how we handle your data."
+        description="Learn how we collect, use, and protect your personal information."
       />
       {/* Hero */}
       <section className="bg-hero-pattern text-primary-foreground py-16 md:py-20">

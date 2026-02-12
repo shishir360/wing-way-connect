@@ -8,13 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { CheckCircle, Package, AlertCircle, RefreshCw, Box, MapPin, Search } from "lucide-react";
+import { CheckCircle, Package, RefreshCw, MapPin, Search } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useSearchParams } from "react-router-dom";
 
 export default function AgentScan() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const [scannedData, setScannedData] = useState<{ id: string } | null>(null);
   const [shipmentInfo, setShipmentInfo] = useState<any>(null);
   const [scanType, setScanType] = useState("checkpoint");
@@ -23,6 +25,16 @@ export default function AgentScan() {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [scanSuccess, setScanSuccess] = useState(false);
+  const [manualTrackingId, setManualTrackingId] = useState("");
+
+  // Check for URL params (pre-filled from dashboard)
+  useEffect(() => {
+    const idParam = searchParams.get('id');
+    if (idParam && !scannedData) {
+      setManualTrackingId(idParam);
+      handleScan(idParam);
+    }
+  }, [searchParams]);
 
   // Fetch agent's designated role/status & Auto-Location
   useEffect(() => {
@@ -47,12 +59,10 @@ export default function AgentScan() {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(async (position) => {
         const { latitude, longitude } = position.coords;
-        // Simple reverse geocoding via OpenStreetMap (Free, no key needed for small usage)
         try {
           const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
           const data = await res.json();
           if (data && data.display_name) {
-            // Shorten the address for UI
             const shortLoc = data.address.city || data.address.town || data.address.village || data.address.suburb || "Unknown Location";
             setLocation(`${shortLoc}, ${data.address.country_code?.toUpperCase()}`);
           } else {
@@ -65,6 +75,32 @@ export default function AgentScan() {
         console.error("Geo Error:", error);
       });
     }
+
+    const channel = supabase
+      .channel('agent-role-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_roles',
+          filter: `user_id=eq.${user?.id}`,
+        },
+        (payload) => {
+          const newStatus = payload.new.designated_status;
+          if (newStatus !== undefined) {
+            setDesignatedStatus(newStatus);
+            setScanType(newStatus || "checkpoint");
+            // Notification is now handled globally in AgentLayout
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const handleScan = async (data: string) => {
@@ -84,8 +120,8 @@ export default function AgentScan() {
 
       setScannedData({ id: trackingId });
 
-      // Fetch shipment details
-      const { data: shipment } = await supabase
+      // Fetch shipment details - Try full tracking ID first
+      const { data: shipment, error } = await supabase
         .from('shipments')
         .select('*')
         .eq('tracking_id', trackingId)
@@ -95,6 +131,8 @@ export default function AgentScan() {
         setShipmentInfo(shipment);
         toast({ title: "Shipment Found! 📦", description: `Tracking: ${trackingId}` });
       } else {
+        // Fallback logic for Short ID could go here if DB supported it
+        // For now, fail gracefully
         toast({ title: "Shipment Not Found", description: `No shipment found for ID: ${trackingId}`, variant: "destructive" });
       }
     } catch (e) {
@@ -106,7 +144,62 @@ export default function AgentScan() {
     if (!user || !shipmentInfo) return;
     setSubmitting(true);
     try {
-      const { error } = await supabase.from('shipment_scans').insert({
+      const scanTypeLabels: Record<string, string> = {
+        pickup: "Picked Up",
+        handover: "Handed Over",
+        in_transit: "In Transit",
+        customs: "Customs Cleared",
+        checkpoint: "Checkpoint Passed",
+        out_for_delivery: "Out for Delivery",
+        delivery: "Delivered"
+      };
+
+      // 1. DUPLICATE CHECK
+      const { data: existingScan } = await supabase
+        .from('shipment_scans')
+        .select('id')
+        .eq('shipment_id', shipmentInfo.id)
+        .eq('scan_type', scanType)
+        .maybeSingle();
+
+      if (existingScan) {
+        toast({
+          title: "Duplicate Scan ⚠️",
+          description: `This shipment is already marked as ${scanTypeLabels[scanType]?.toUpperCase() || scanType}.`,
+          variant: "destructive"
+        });
+        if (window.navigator && window.navigator.vibrate) window.navigator.vibrate([200, 100, 200]);
+        setSubmitting(false);
+        return;
+      }
+
+      // 2. UPDATE MAIN SHIPMENT STATUS
+      // Status Mapping
+      const statusMap: Record<string, string> = {
+        pickup: 'picked_up',
+        handover: 'in_transit',
+        in_transit: 'in_transit',
+        customs: 'customs',
+        checkpoint: 'in_transit',
+        out_for_delivery: 'out_for_delivery',
+        delivery: 'delivered'
+      };
+
+      const newStatus = statusMap[scanType] || 'in_transit';
+      const updatePayload: any = {
+        status: newStatus,
+        assigned_agent: user.id // Set current agent as the holder
+      };
+
+      if (scanType === 'delivery') {
+        updatePayload.actual_delivery = new Date().toISOString();
+      }
+
+      const { error: updateError } = await supabase.from('shipments').update(updatePayload).eq('id', shipmentInfo.id);
+      if (updateError) throw updateError;
+
+      // 3. INSERT SCAN LOG
+      const { error: scanError } = await supabase.from('shipment_scans').insert({
         shipment_id: shipmentInfo.id,
         scanned_by: user.id,
         scan_type: scanType,
@@ -114,30 +207,18 @@ export default function AgentScan() {
         notes: notes || null,
       });
 
-      if (error) throw error;
+      if (scanError) throw scanError;
 
-      // If delivery scan, update shipment status
-      if (scanType === 'delivery') {
-        await supabase.from('shipments').update({ status: 'delivered', actual_delivery: new Date().toISOString() }).eq('id', shipmentInfo.id);
-      }
-
-      // Auto-update status for "Handed Over" to "In Transit" logic if needed, 
-      // but for now relying on scan entry. Timeline will be added below.
-
-      const scanTypeLabels: Record<string, string> = {
-        pickup: "Picked Up", handover: "Handed Over",
-        checkpoint: "Checkpoint Passed", delivery: "Delivered"
-      };
-
+      // 4. INSERT TIMELINE EVENT
       await supabase.from('shipment_timeline').insert({
         shipment_id: shipmentInfo.id,
-        status: scanType === 'delivery' ? 'delivered' : shipmentInfo.status, // Keep current status unless delivered, or update based on scan logic
+        status: scanType === 'delivery' ? 'delivered' : (statusMap[scanType] || scanType),
         description: scanTypeLabels[scanType] + (location ? ` - ${location}` : ''),
         location: location || null,
-        is_current: scanType === 'delivery',
+        is_current: true, // Mark this as the latest event
       });
 
-      if (window.navigator && window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]); // Success vibration
+      if (window.navigator && window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
       setScanSuccess(true);
       toast({ title: "Scan Saved! ✅", description: `${scanTypeLabels[scanType]} recorded.` });
     } catch (e: any) {
@@ -150,15 +231,23 @@ export default function AgentScan() {
   const resetScan = () => {
     setScannedData(null);
     setShipmentInfo(null);
-    setScanType(designatedStatus || "checkpoint"); // Reset to designated default
+    setScanType(designatedStatus || "checkpoint");
     setLocation("");
     setNotes("");
     setScanSuccess(false);
+    setManualTrackingId("");
+    // Clear URL params without reload
+    window.history.replaceState(null, '', window.location.pathname);
   };
 
   const scanTypeLabels: Record<string, string> = {
-    pickup: "Picked Up", handover: "Handed Over",
-    checkpoint: "Checkpoint Passed", delivery: "Delivered"
+    pickup: "Picked Up",
+    handover: "Handed Over",
+    in_transit: "In Transit",
+    customs: "Customs Cleared",
+    checkpoint: "Checkpoint Passed",
+    out_for_delivery: "Out for Delivery",
+    delivery: "Delivered"
   };
 
   if (scanSuccess) {
@@ -183,8 +272,8 @@ export default function AgentScan() {
   }
 
   return (
-    <div className="max-w-md mx-auto">
-      <Seo title="Smart Scan" />
+    <div className="max-w-md mx-auto pb-24">
+      <Seo title="Scan & Update" description="Scan shipments and update delivery progress quickly." />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold font-display flex items-center gap-2">
           <RefreshCw className="h-6 w-6 text-primary animate-pulse-slow" />
@@ -198,20 +287,51 @@ export default function AgentScan() {
       </div>
 
       {!shipmentInfo ? (
-        <Card className="p-1 border-2 border-dashed border-primary/20 bg-muted/30 shadow-none overflow-hidden rounded-3xl">
-          <div className="bg-background rounded-[1.2rem] overflow-hidden relative">
-            <QRScanner onScan={handleScan} onError={(err) => toast({ title: "Camera Error", description: err, variant: "destructive" })} />
-            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-              <div className="w-48 h-48 border-2 border-white/50 rounded-xl relative">
-                <div className="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-primary -mt-1 -ml-1 rounded-tl-sm" />
-                <div className="absolute top-0 right-0 w-4 h-4 border-t-4 border-r-4 border-primary -mt-1 -mr-1 rounded-tr-sm" />
-                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-4 border-l-4 border-primary -mb-1 -ml-1 rounded-bl-sm" />
-                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 border-primary -mb-1 -mr-1 rounded-br-sm" />
+        <>
+          <Card className="p-1 border-2 border-dashed border-primary/20 bg-muted/30 shadow-none overflow-hidden rounded-3xl relative min-h-[300px] flex flex-col items-center justify-center">
+            {/* Only render scanner if not checking manual ID initially to prevent weird load states, though handling it in QR component is better */}
+            <div className="bg-background rounded-[1.2rem] overflow-hidden relative w-full h-full min-h-[300px]">
+              <QRScanner onScan={handleScan} onError={(err) => console.log(err)} />
+              <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                <div className="w-48 h-48 border-2 border-white/50 rounded-xl relative">
+                  <div className="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-primary -mt-1 -ml-1 rounded-tl-sm" />
+                  <div className="absolute top-0 right-0 w-4 h-4 border-t-4 border-r-4 border-primary -mt-1 -mr-1 rounded-tr-sm" />
+                  <div className="absolute bottom-0 left-0 w-4 h-4 border-b-4 border-l-4 border-primary -mb-1 -ml-1 rounded-bl-sm" />
+                  <div className="absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 border-primary -mb-1 -mr-1 rounded-br-sm" />
+                </div>
               </div>
             </div>
+            <p className="text-center text-xs text-muted-foreground py-3">Point camera at the shipping label QR code</p>
+          </Card>
+
+          {/* Manual Entry */}
+          <div className="mt-6">
+            <div className="relative flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Or enter Tracking ID manually..."
+                  className="pl-9 h-12 rounded-xl bg-card border-border/50"
+                  value={manualTrackingId}
+                  onChange={(e) => setManualTrackingId(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      if (manualTrackingId.trim()) handleScan(manualTrackingId.trim());
+                    }
+                  }}
+                />
+              </div>
+              <Button
+                className="h-12 rounded-xl px-4"
+                onClick={() => {
+                  if (manualTrackingId.trim()) handleScan(manualTrackingId.trim());
+                }}
+              >
+                Go
+              </Button>
+            </div>
           </div>
-          <p className="text-center text-xs text-muted-foreground py-3">Point camera at the shipping label QR code</p>
-        </Card>
+        </>
       ) : (
         <div className="space-y-6 animate-in slide-in-from-bottom-5 fade-in duration-300">
           <Card className="p-5 border-border/50 shadow-md bg-gradient-to-br from-card to-muted/20">
@@ -226,7 +346,7 @@ export default function AgentScan() {
                     {shipmentInfo.route === 'bd-to-ca' ? '🇧🇩 BD ➔ 🇨🇦 CA' : '🇨🇦 CA ➔ 🇧🇩 BD'}
                   </Badge>
                   <Badge variant="outline" className="bg-background/50 capitalize">
-                    {shipmentInfo.status.replace('_', ' ')}
+                    {shipmentInfo.status?.replace('_', ' ')}
                   </Badge>
                 </div>
               </div>
@@ -247,7 +367,7 @@ export default function AgentScan() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Scan Action</Label>
-              {designatedStatus ? (
+              {designatedStatus && designatedStatus !== 'out_for_delivery' ? (
                 <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl flex items-center justify-between">
                   <span className="font-medium text-foreground">{scanTypeLabels[designatedStatus]}</span>
                   <Badge className="bg-primary text-primary-foreground">Auto-Selected</Badge>
@@ -258,10 +378,22 @@ export default function AgentScan() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pickup">Pickup</SelectItem>
-                    <SelectItem value="handover">Handover</SelectItem>
-                    <SelectItem value="checkpoint">Checkpoint</SelectItem>
-                    <SelectItem value="delivery">Delivery (Completed)</SelectItem>
+                    {designatedStatus === 'out_for_delivery' ? (
+                      [
+                        <SelectItem key="out" value="out_for_delivery">Out for Delivery</SelectItem>,
+                        <SelectItem key="del" value="delivery">Delivery (Completed)</SelectItem>
+                      ]
+                    ) : (
+                      [
+                        <SelectItem key="pickup" value="pickup">Pickup</SelectItem>,
+                        <SelectItem key="handover" value="handover">Handover (Hub)</SelectItem>,
+                        <SelectItem key="transit" value="in_transit">In Transit</SelectItem>,
+                        <SelectItem key="customs" value="customs">Customs Clearance</SelectItem>,
+                        <SelectItem key="out" value="out_for_delivery">Out for Delivery</SelectItem>,
+                        <SelectItem key="check" value="checkpoint">Checkpoint (General)</SelectItem>,
+                        <SelectItem key="del" value="delivery">Delivery (Completed)</SelectItem>
+                      ]
+                    )}
                   </SelectContent>
                 </Select>
               )}

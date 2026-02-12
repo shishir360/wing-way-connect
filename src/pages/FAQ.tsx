@@ -42,7 +42,7 @@ export default function FAQ() {
     <Layout>
       <Seo
         title="FAQ"
-        description="Frequently Asked Questions about Wing Way Connect services, tracking, and policies."
+        description="Frequently asked questions about shipments, air tickets, and our services."
       />
       {/* Hero */}
       <section className="bg-hero-pattern text-primary-foreground py-12 md:py-16 relative overflow-hidden">

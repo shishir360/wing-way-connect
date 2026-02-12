@@ -294,9 +294,15 @@ export default function Header() {
                 <div className="p-4 border-t border-border space-y-3 bg-muted/30">
                   {user ? (
                     <Button asChild variant="outline" className="w-full h-12 rounded-xl text-base">
-                      <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center gap-2">
-                        <User className="h-5 w-5" />
-                        Dashboard
+                      <Link
+                        to={role === 'admin' ? '/admin' : role === 'agent' ? '/agent' : '/dashboard'}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center justify-center gap-2"
+                      >
+                        {role === 'admin' ? <ShieldCheck className="h-5 w-5" /> :
+                          role === 'agent' ? <Truck className="h-5 w-5" /> :
+                            <User className="h-5 w-5" />}
+                        {role === 'admin' ? 'Admin Panel' : role === 'agent' ? 'Agent Panel' : 'Dashboard'}
                       </Link>
                     </Button>
                   ) : (

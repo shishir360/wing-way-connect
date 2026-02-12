@@ -1,47 +1,164 @@
-import { Package, Plane, Users, TrendingUp, CheckCircle, Clock, Search, Filter, MoreHorizontal, Download } from "lucide-react";
+import { Package, Plane, Users, TrendingUp, CheckCircle, Clock, ExternalLink, Download, DollarSign, ScanLine, Truck, MapPin, BadgeCheck } from "lucide-react";
 import { useAdminShipments, useAdminBookings, useAdminProfiles } from "@/hooks/useAdminData";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import Seo from "@/components/Seo";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function AdminOverview() {
   const { shipments, loading: sLoading } = useAdminShipments();
   const { bookings, loading: bLoading } = useAdminBookings();
   const { profiles, loading: pLoading } = useAdminProfiles();
+  const navigate = useNavigate();
+  const [agentActivity, setAgentActivity] = useState<any[]>([]);
 
-  // Status Calculations
-  const activeShipments = shipments.filter(s => !['delivered', 'cancelled', 'completed'].includes(s.status));
-  const deliveredShipments = shipments.filter(s => s.status === 'delivered' || s.status === 'completed');
-  const pendingShipments = shipments.filter(s => s.status === 'pending');
+  // Helper to check if item is valid revenue (not cancelled)
+  const isValid = (status: string) => !['cancelled', 'rejected'].includes(status.toLowerCase());
 
-  // Revenue (Mock Calculation for Demo)
-  const totalRevenue = shipments.length * 120 + bookings.length * 850;
+  // Fetch Agent Activity (Scans)
+  useEffect(() => {
+    const fetchActivity = async () => {
+      const { data } = await supabase
+        .from('shipment_scans')
+        .select('*, scanned_by(full_name, avatar_url), shipments(tracking_id)')
+        .order('scanned_at', { ascending: false })
+        .limit(10);
+      setAgentActivity(data || []);
+    };
+    fetchActivity();
+
+    // Real-time subscription for scans
+    const channel = supabase
+      .channel('admin-scans')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'shipment_scans' }, () => {
+        fetchActivity();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  // 1. Calculate Revenue
+  const cargoRevenue = shipments
+    .filter(s => isValid(s.status))
+    .reduce((sum, s) => sum + (s.total_cost || 0), 0);
+
+  const flightRevenue = bookings
+    .filter(b => isValid(b.status))
+    .reduce((sum, b) => sum + (b.total_price || 0), 0);
+
+  const totalRevenue = cargoRevenue + flightRevenue;
+
+  // 2. Prepare Chart Data
+  const revenueSourceData = [
+    { name: 'Cargo', value: cargoRevenue, color: '#3b82f6' }, // Blue
+    { name: 'Flights', value: flightRevenue, color: '#8b5cf6' }, // Violet
+  ];
+
+  // 3. Top Customers Logic
+  const customerSpend = new Map<string, { id: string; name: string; email: string; spend: number; orders: number }>();
+
+  // Process Shipments
+  shipments.forEach(s => {
+    if (!isValid(s.status)) return;
+    const key = s.user_id || s.sender_email;
+    if (!key) return;
+
+    const existing = customerSpend.get(key) || {
+      id: s.user_id || '',
+      name: s.sender_name,
+      email: s.sender_email || 'N/A',
+      spend: 0,
+      orders: 0
+    };
+
+    existing.spend += (s.total_cost || 0);
+    existing.orders += 1;
+    customerSpend.set(key, existing);
+  });
+
+  // Process Bookings
+  bookings.forEach(b => {
+    if (!isValid(b.status)) return;
+    const key = b.user_id || 'guest';
+    if (!key) return;
+
+    let existing = customerSpend.get(key);
+    if (!existing) {
+      const profile = profiles.find(p => p.id === key);
+      existing = {
+        id: key,
+        name: profile?.full_name || `User ${key.slice(0, 4)}`,
+        email: profile?.email || 'N/A',
+        spend: 0,
+        orders: 0
+      };
+    }
+
+    existing.spend += (b.total_price || 0);
+    existing.orders += 1;
+    customerSpend.set(key, existing);
+  });
+
+  const topCustomers = Array.from(customerSpend.values())
+    .sort((a, b) => b.spend - a.spend)
+    .slice(0, 5);
+
+  // 4. Recent Activity (Consolidated)
+  const recentActivity = [
+    ...shipments.map(s => ({
+      id: s.tracking_id,
+      type: 'cargo',
+      date: new Date(s.created_at),
+      customer: s.sender_name,
+      amount: s.total_cost,
+      status: s.status,
+      route: s.route === 'bd-to-ca' ? 'BD ➔ CA' : 'CA ➔ BD',
+      raw: s
+    })),
+    ...bookings.map(b => ({
+      id: b.booking_ref,
+      type: 'flight',
+      date: new Date(b.created_at),
+      customer: `Booking #${b.booking_ref.slice(-4)}`,
+      amount: b.total_price,
+      status: b.status,
+      route: `${b.from_city} ➔ ${b.to_city}`,
+      raw: b
+    }))
+  ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 10);
+
 
   const stats = [
     {
+      label: "Total Revenue",
+      value: `$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      trend: "+12.5%", // Mock trend
+      desc: "Gross revenue",
+      icon: DollarSign,
+      color: "text-emerald-600",
+      bg: "bg-emerald-50"
+    },
+    {
       label: "Total Shipments",
       value: shipments.length,
-      trend: "+12%",
-      desc: "vs last month",
+      trend: "+8%",
+      desc: `${shipments.filter(s => s.status === 'delivered').length} delivered`,
       icon: Package,
       color: "text-blue-600",
       bg: "bg-blue-50"
     },
     {
-      label: "Total Revenue",
-      value: `$${totalRevenue.toLocaleString()}`,
-      trend: "+8.2%",
-      desc: "vs last month",
-      icon: TrendingUp,
-      color: "text-emerald-600",
-      bg: "bg-emerald-50"
-    },
-    {
       label: "Flight Bookings",
       value: bookings.length,
       trend: "+24%",
-      desc: "vs last month",
+      desc: "All time",
       icon: Plane,
       color: "text-violet-600",
       bg: "bg-violet-50"
@@ -50,36 +167,27 @@ export default function AdminOverview() {
       label: "Active Users",
       value: profiles.length,
       trend: "+5%",
-      desc: "new users",
+      desc: "Registered users",
       icon: Users,
       color: "text-amber-600",
       bg: "bg-amber-50"
     },
   ];
 
-  // Chart Data
-  const chartData = [
-    { name: 'Active', value: activeShipments.length, color: '#f59e0b' }, // Amber
-    { name: 'Delivered', value: deliveredShipments.length, color: '#10b981' }, // Emerald
-    { name: 'Pending', value: pendingShipments.length, color: '#3b82f6' }, // Blue
-  ];
-
   const isLoading = sLoading || bLoading || pLoading;
 
   return (
-    <div className="space-y-6">
-      <Seo title="Admin Overview" description="Overview of platform activity." />
+    <div className="space-y-6 pb-12">
+      <Seo title="Admin Overview" description="Overview of shipments, bookings, users, and system activity." />
+
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold font-display">Dashboard Overview</h1>
-          <p className="text-muted-foreground">Welcome back towards your goals.</p>
-
+          <p className="text-muted-foreground">Welcome back! Here's your business at a glance.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="gap-2">
-            <Filter className="h-4 w-4" /> Filter
-          </Button>
-          <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200">
+          <Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
             <Download className="h-4 w-4" /> Export Report
           </Button>
         </div>
@@ -105,35 +213,34 @@ export default function AdminOverview() {
                   <div className={`p-3 rounded-xl ${stat.bg} group-hover:scale-110 transition-transform`}>
                     <stat.icon className={`h-6 w-6 ${stat.color}`} />
                   </div>
-                  <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
-                    {stat.trend}
-                  </span>
                 </div>
                 <div>
-                  <h3 className="text-slate-500 text-sm font-medium mb-1">{stat.label}</h3>
+                  <h3 className="text-muted-foreground text-sm font-medium mb-1">{stat.label}</h3>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold text-slate-800">{stat.value}</span>
+                    <span className="text-2xl font-bold font-display">{stat.value}</span>
                   </div>
-                  <p className="text-xs text-slate-400 mt-1">{stat.desc}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{stat.desc}</p>
                 </div>
               </motion.div>
             ))}
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Chart Section */}
+            {/* Revenue Chart */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 }}
-              className="bg-card p-6 rounded-3xl border border-border/40 shadow-sm flex flex-col items-center justify-center lg:col-span-1 min-h-[300px]"
+              className="bg-card p-6 rounded-3xl border border-border/40 shadow-sm lg:col-span-1 min-h-[350px] flex flex-col"
             >
-              <h3 className="text-lg font-bold mb-6 w-full text-left">Shipment Status</h3>
-              <div className="h-[200px] w-full relative">
+              <h3 className="text-lg font-bold mb-2">Revenue Breakdown</h3>
+              <p className="text-sm text-muted-foreground mb-6">Split between Cargo & Flights</p>
+
+              <div className="flex-1 relative min-h-[200px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={chartData}
+                      data={revenueSourceData}
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
@@ -142,123 +249,220 @@ export default function AdminOverview() {
                       dataKey="value"
                       stroke="none"
                     >
-                      {chartData.map((entry, index) => (
+                      {revenueSourceData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
                     <Tooltip
                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                      itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                      formatter={(value: number) => [`$${value.toLocaleString()}`, 'Revenue']}
                     />
                   </PieChart>
                 </ResponsiveContainer>
                 {/* Center text */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-3xl font-bold">{shipments.length}</span>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider">Total</span>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total</span>
+                  <span className="text-xl font-bold">${totalRevenue.toLocaleString(undefined, { notation: 'compact' })}</span>
                 </div>
               </div>
-              <div className="flex gap-4 mt-6 w-full justify-center">
-                {chartData.map(item => (
-                  <div key={item.name} className="flex items-center gap-2 text-xs">
+
+              <div className="flex gap-4 mt-6 justify-center">
+                {revenueSourceData.map(item => (
+                  <div key={item.name} className="flex items-center gap-2 text-sm">
                     <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
                     <span className="text-muted-foreground">{item.name}</span>
+                    <span className="font-semibold">${item.value.toLocaleString(undefined, { notation: 'compact' })}</span>
                   </div>
                 ))}
               </div>
             </motion.div>
 
-            {/* Recent Orders Table */}
+            {/* Top Customers - Clickable */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="bg-card p-6 rounded-3xl border border-border/40 shadow-sm lg:col-span-1"
+            >
+              <h3 className="text-lg font-bold mb-2">Top Customers</h3>
+              <p className="text-sm text-muted-foreground mb-6">Highest spending clients</p>
+
+              <div className="space-y-4">
+                {topCustomers.map((customer, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer group"
+                    onClick={() => {
+                      if (customer.id && customer.id !== 'guest') {
+                        navigate(`/admin/users/${customer.id}`);
+                      } else {
+                        navigate(`/admin/users?search=${customer.name}`);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold group-hover:bg-primary group-hover:text-white transition-colors">
+                        {customer.name?.charAt(0) || '?'}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold truncate max-w-[120px] group-hover:text-primary transition-colors">{customer.name}</p>
+                        <p className="text-xs text-muted-foreground truncate max-w-[120px]">{customer.orders} Orders</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-emerald-600">${customer.spend.toLocaleString()}</p>
+                      <ExternalLink className="h-3 w-3 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </div>
+                ))}
+
+                {topCustomers.length === 0 && (
+                  <div className="text-center py-10 text-muted-foreground text-sm">No sales data yet.</div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Agent Activity - NEW SECTION */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-              className="bg-card p-6 rounded-3xl border border-border/40 shadow-sm lg:col-span-2"
+              transition={{ delay: 0.6 }}
+              className="bg-card p-6 rounded-3xl border border-border/40 shadow-sm lg:col-span-1"
             >
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold">Recent Orders</h3>
-                <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80">
-                  See all <span className="ml-1">→</span>
-                </Button>
+                <div>
+                  <h3 className="text-lg font-bold flex items-center gap-2">
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    </span>
+                    Live Delivery Updates
+                  </h3>
+                  <p className="text-sm text-muted-foreground">Real-time packet movement</p>
+                </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/50">
-                      <th className="pb-4 pl-2">Order ID</th>
-                      <th className="pb-4">Customer</th>
-                      <th className="pb-4">Route</th>
-                      <th className="pb-4">Status</th>
-                      <th className="pb-4 text-right pr-2">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/30">
-                    {shipments.slice(0, 5).map((s, i) => (
-                      <tr key={s.id} className="group hover:bg-muted/30 transition-colors">
-                        <td className="py-4 pl-2">
-                          <span className="font-semibold text-primary family-mono text-sm">#{s.tracking_id.slice(-6)}</span>
-                        </td>
-                        <td className="py-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-xs font-bold text-muted-foreground">
-                              {s.sender_name.charAt(0)}
-                            </div>
-                            <span className="text-sm font-medium">{s.sender_name}</span>
-                          </div>
-                        </td>
-                        <td className="py-4 text-sm text-muted-foreground">
-                          {s.route === 'bd-to-ca' ? '🇧🇩 BD ➔ 🇨🇦 CA' : '🇨🇦 CA ➔ 🇧🇩 BD'}
-                        </td>
-                        <td className="py-4">
-                          <StatusBadge status={s.status} />
-                        </td>
-                        <td className="py-4 text-right pr-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                {agentActivity.map((activity, i) => (
+                  <div
+                    key={activity.id}
+                    className="flex items-start gap-4 p-3 rounded-xl border border-border/40 hover:bg-muted/30 transition-colors cursor-pointer group"
+                    onClick={() => navigate(`/admin/shipments?search=${activity.shipments?.tracking_id}`)}
+                  >
+                    <div className="mt-1 relative">
+                      <Avatar className="h-8 w-8 border border-background shadow-sm">
+                        <AvatarImage src={activity.scanned_by?.avatar_url} />
+                        <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                          {activity.scanned_by?.full_name?.substring(0, 2).toUpperCase() || 'AG'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5">
+                        <BadgeCheck className="w-3 h-3 text-green-500" />
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm">
+                        <span className="font-semibold text-foreground">{activity.scanned_by?.full_name || 'Agent'}</span>
+                        <span className="text-muted-foreground mx-1">
+                          {activity.scan_type === 'delivery' ? 'delivered' :
+                            activity.scan_type === 'pickup' ? 'picked up' :
+                              activity.scan_type === 'out_for_delivery' ? 'is out for delivery' :
+                                'scanned'}
+                        </span>
+                        <span className="font-mono text-xs font-medium text-primary bg-primary/10 px-1 py-0.5 rounded">{activity.shipments?.tracking_id}</span>
+                      </p>
+
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <Badge variant="outline" className={`text-[10px] px-1.5 h-5 capitalize border-0 ${activity.scan_type === 'delivery' ? 'bg-green-100 text-green-700' :
+                          activity.scan_type === 'out_for_delivery' ? 'bg-orange-100 text-orange-700' :
+                            'bg-blue-50 text-blue-700'
+                          }`}>
+                          {activity.scan_type.replace(/_/g, ' ')}
+                        </Badge>
+                        {activity.location && (
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 truncate max-w-[120px]">
+                            <MapPin className="h-3 w-3" /> {activity.location}
+                          </span>
+                        )}
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 ml-auto">
+                          <Clock className="h-3 w-3" /> {format(new Date(activity.scanned_at), 'h:mm a')}
+                        </span>
+                      </div>
+                    </div>
+                    <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity self-center" />
+                  </div>
+                ))}
+                {agentActivity.length === 0 && (
+                  <div className="text-center py-12 flex flex-col items-center text-muted-foreground">
+                    <ScanLine className="h-10 w-10 mb-2 opacity-20" />
+                    <p className="text-sm">No live updates yet.</p>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>
+
+          {/* Recent Activity Full Width */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+            className="bg-card p-6 rounded-3xl border border-border/40 shadow-sm mt-6"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-bold">Recent Orders</h3>
+                <p className="text-sm text-muted-foreground">Latest shipments and bookings</p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/admin/shipments')} className="hidden sm:flex text-primary">View All</Button>
+            </div>
+
+            <div className="space-y-4">
+              {recentActivity.map((activity, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-4 p-4 rounded-xl border border-border/40 hover:bg-muted/30 transition-colors cursor-pointer group"
+                  onClick={() => {
+                    if (activity.type === 'cargo') {
+                      navigate(`/admin/shipments?search=${activity.id}`);
+                    } else {
+                      navigate(`/admin/bookings?search=${activity.id}`);
+                    }
+                  }}
+                >
+                  <div className={`p-3 rounded-full ${activity.type === 'cargo' ? 'bg-blue-100 text-blue-600' : 'bg-violet-100 text-violet-600'}`}>
+                    {activity.type === 'cargo' ? <Package className="h-5 w-5" /> : <Plane className="h-5 w-5" />}
+                  </div>
+                  <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
+                    <div className="col-span-2 md:col-span-1">
+                      <p className="font-bold text-sm truncate">{activity.customer}</p>
+                      <p className="text-xs text-muted-foreground">{activity.id}</p>
+                    </div>
+                    <div className="hidden md:block">
+                      <p className="text-sm flex items-center gap-1 text-muted-foreground">
+                        {activity.route}
+                      </p>
+                    </div>
+                    <div className="hidden md:block">
+                      <Badge variant="outline" className="capitalize">
+                        {activity.status}
+                      </Badge>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-bold block">
+                        {activity.amount ? `$${activity.amount.toLocaleString()}` : 'Quote'}
+                      </span>
+                      <span className="text-xs text-muted-foreground block">{format(activity.date, 'MMM d')}</span>
+                    </div>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
         </>
       )}
     </div>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    pending: "bg-amber-100 text-amber-700",
-    pickup_scheduled: "bg-blue-100 text-blue-700",
-    picked_up: "bg-indigo-100 text-indigo-700",
-    in_transit: "bg-violet-100 text-violet-700",
-    customs: "bg-rose-100 text-rose-700",
-    out_for_delivery: "bg-sky-100 text-sky-700",
-    delivered: "bg-emerald-100 text-emerald-700",
-    cancelled: "bg-slate-100 text-slate-700",
-    confirmed: "bg-emerald-100 text-emerald-700",
-  };
-
-  const labels: Record<string, string> = {
-    pending: "Pending",
-    pickup_scheduled: "Scheduled",
-    picked_up: "Picked Up",
-    in_transit: "In Transit",
-    customs: "Customs",
-    out_for_delivery: "Delivering",
-    delivered: "Delivered",
-    cancelled: "Cancelled",
-    confirmed: "Confirmed"
-  };
-
-  return (
-    <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold ${colors[status] || 'bg-gray-100 text-gray-700'}`}>
-      {labels[status] || status}
-    </span>
   );
 }

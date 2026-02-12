@@ -13,20 +13,68 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const containerId = "qr-reader";
+  const isMounted = useRef(true);
 
-  const cleanup = async () => {
-    if (scannerRef.current) {
-      try {
-        if (scannerRef.current.isScanning) {
-          await scannerRef.current.stop();
-        }
-        scannerRef.current.clear();
-      } catch (e) {
-        console.warn("Error stopping scanner:", e);
+  // New: Robust Error Suppression for html5-qrcode crashes
+  useEffect(() => {
+    const handleGlobalError = (event: ErrorEvent) => {
+      // html5-qrcode often throws this error when unmounting
+      if (
+        event.message?.includes("removeChild") ||
+        event.message?.includes("not a child") ||
+        event.message?.includes("NotFoundError")
+      ) {
+        event.preventDefault(); // Prevent app crash
+        console.warn("Suppressed known QR scanner error:", event.message);
       }
-      scannerRef.current = null;
+    };
+    window.addEventListener("error", handleGlobalError);
+    return () => window.removeEventListener("error", handleGlobalError);
+  }, []);
+
+  // Defined BEFORE useEffect to avoid lexical issues (though const is block scoped, cleaner this way)
+  // or define as function so it's hoisted. But relying on ref is better.
+  const cleanup = async () => {
+    if (!scannerRef.current) return;
+    const scanner = scannerRef.current;
+
+    try {
+      // 1. Try to stop scanning first
+      try {
+        // Just try to stop, if it fails because not running, catch it.
+        await scanner.stop();
+      } catch (e) { /* ignore not running */ }
+
+      // 2. Clear ONLY IF mounted and element exists. 
+      // If unmounting, React handles DOM removal. Calling clear() races with React.
+      if (document.getElementById(containerId)) {
+        try {
+          // Only clear if we are NOT unmounting (isMounted.current check is safer if we pass it, but document check is ok)
+          // Actually, if we are unmounting, we should NOT clear. React destroys the nodes.
+          // However, if we are just restarting the scanner, we MUST clear.
+          // Let's rely on document.getElementById check primarily.
+          await scanner.clear();
+        } catch (e: any) {
+          // Ignore all clearing errors as they are likely DOM related
+          console.warn("Scanner clear skipped/failed (harmless):", e.message);
+        }
+      }
+    } catch (e) {
+      console.warn("Cleanup critical error:", e);
     }
+    scannerRef.current = null;
   };
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+      // Cleanup on unmount
+      if (scannerRef.current) {
+        cleanup().catch(e => console.warn("Unmount cleanup failed", e));
+      }
+    };
+  }, []);
 
   const startScanning = async () => {
     if (isLoading || isScanning) return;
@@ -44,11 +92,10 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
         { fps: 10, qrbox: { width: 250, height: 250 } },
         (decodedText) => {
           onScan(decodedText);
-          // Optional: Don't stop immediately if you want continuous scanning
-          // But for this use case, stopping is usually intended
+          // Stop scanning after successful scan
           stopScanning();
         },
-        () => { } // ignore errors during scanning
+        () => { } // ignore frame errors
       );
       setIsScanning(true);
     } catch (err: any) {
@@ -71,17 +118,6 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    return () => {
-      // Emergency cleanup on unmount
-      if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => { }).finally(() => {
-          scannerRef.current?.clear().catch(() => { });
-        });
-      }
-    };
-  }, []);
 
   return (
     <div className="space-y-3">

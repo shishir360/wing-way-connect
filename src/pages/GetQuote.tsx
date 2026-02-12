@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
 import Seo from "@/components/Seo";
 import { Button } from "@/components/ui/button";
@@ -60,11 +61,48 @@ export default function GetQuote() {
   const [departureDate, setDepartureDate] = useState<Date>();
   const [returnDate, setReturnDate] = useState<Date>();
 
+  // Dynamic settings state
+  const [pricing, setPricing] = useState<any>({
+    "bd-to-ca": { base: 15, perKg: 12 },
+    "ca-to-bd": { base: 12, perKg: 10 },
+  });
+
+  useEffect(() => {
+    fetchPricing();
+  }, []);
+
+  const fetchPricing = async () => {
+    const { data } = await supabase.from('site_settings' as any).select('*');
+    if (data) {
+      const newPricing: any = { ...pricing };
+      data.forEach((item: any) => {
+        if (item.key === 'pricing_bd') newPricing['bd-to-ca'] = item.value;
+        if (item.key === 'pricing_ca') newPricing['ca-to-bd'] = item.value;
+      });
+      setPricing(newPricing);
+    }
+  };
+
   const originCities = route === "bd-to-ca" ? cities.bangladesh : cities.canada;
   const destCities = route === "bd-to-ca" ? cities.canada : cities.bangladesh;
 
   const weightNum = parseFloat(weight) || 0;
-  const priceEstimate = calculateShippingCost(weightNum, route, "standard", false, false);
+
+  // Calculate using dynamic pricing
+  const calculateDynamicCost = () => {
+    const rates = pricing[route];
+    const baseCost = rates.base;
+    const weightCost = weightNum * rates.perKg;
+    // Standard service multiplier is 1 (base + weight)
+    // We can expand this later if service multipliers become dynamic too
+    return {
+      base: baseCost,
+      weight: weightCost,
+      total: baseCost + weightCost
+    };
+  };
+
+  const priceEstimate = calculateDynamicCost();
 
   const handleCargoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,7 +168,7 @@ export default function GetQuote() {
     <Layout>
       <Seo
         title="Get a Quote"
-        description="Request a free quote for cargo shipping, courier services, or air tickets from Wing Way Connect."
+        description="Request a fast and accurate shipping quote by providing your shipment details."
       />
       {/* Hero */}
       <section className="bg-hero-pattern text-primary-foreground py-12 md:py-16 relative overflow-hidden">

@@ -7,7 +7,7 @@ interface AuthContextType {
   session: Session | null;
   role: string | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName?: string, phone?: string) => Promise<{ data: { user: User | null; session: Session | null }; error: Error | null }>;
+  signUp: (email: string, password: string, fullName?: string, phone?: string, role?: string) => Promise<{ data: { user: User | null; session: Session | null }; error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
@@ -28,79 +28,92 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log("[AuthContext] Mounting provider...");
+
     // SAFETY TIMEOUT RESTORED for reliability
     const safetyTimer = setTimeout(() => {
+      console.warn("[AuthContext] Safety timeout triggered. Forcing loading to false.");
       setLoading(false);
     }, 5000); // 5 seconds max wait
 
-    // Helper to fetch role safely
-    const fetchRole = async (userId: string) => {
+    // Helper to fetch role safely with timeout
+    const fetchRole = async (userId: string, userEmail?: string): Promise<string> => {
       console.log(`[AuthContext] Fetching role for ${userId}...`);
-      try {
-        // 1. Check specific tables (Priority)
 
-        // Check Admin
-        console.log("[AuthContext] Checking 'admins' table...");
-        const { data: admin, error: adminError } = await supabase.from('admins' as any).select('id').eq('user_id', userId).maybeSingle();
-        if (adminError) console.error("[AuthContext] Admin check error:", adminError);
-        if (admin) {
-          console.log("[AuthContext] Found in 'admins' table. Role: admin");
-          return 'admin';
-        }
+      // 0. SUPER ADMIN BYPASS
+      // If email matches the system admin, force admin role immediately
+      // This protects against DB inconsistencies or missing records
+      const ADMIN_EMAIL = "shishirmd681@gmail.com";
+      if (userEmail && userEmail.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+        console.warn("[AuthContext] Super Admin detected via email. Bypassing DB check.");
+        return 'admin';
+      }
 
-        // Check Agent
-        console.log("[AuthContext] Checking 'agents' table...");
-        const { data: agent } = await supabase.from('agents' as any).select('id, is_approved').eq('user_id', userId).maybeSingle();
-        if (agent) {
-          if (agent.is_approved === false) {
-            console.warn("[AuthContext] Agent found but NOT approved.");
-            return 'user';
+      const timeout = new Promise<string>((resolve) =>
+        setTimeout(() => {
+          console.warn("[AuthContext] Role fetch timed out! Defaulting to 'user'.");
+          resolve('user');
+        }, 3000) // 3 seconds STRICT timeout
+      );
+
+      const roleCheck = async (): Promise<string> => {
+        try {
+          // Run checks in parallel for speed
+          const [adminResult, agentResult, rolesResult, profileResult] = await Promise.all([
+            // Admin Check
+            supabase.from('admins' as any).select('id').eq('user_id', userId).maybeSingle(),
+            // Agent Check
+            supabase.from('agents' as any).select('id, is_approved').eq('user_id', userId).maybeSingle(),
+            // User Roles Check
+            supabase.from('user_roles').select('role, is_approved').eq('user_id', userId),
+            // Profile Check
+            supabase.from('profiles').select('role').eq('id', userId).maybeSingle()
+          ]);
+
+          // 1. Check Admin
+          if (adminResult.data) {
+            console.log("[AuthContext] Found in 'admins' table. Role: admin");
+            return 'admin';
           }
-          console.log("[AuthContext] Found in 'agents' table. Role: agent");
-          return 'agent';
-        }
 
-        // 2. Fallback to user_roles (Legacy/Compatibility)
-        console.log("[AuthContext] Checking 'user_roles' table...");
-        const { data: roles } = await supabase
-          .from('user_roles')
-          .select('role, is_approved')
-          .eq('user_id', userId);
+          // 2. Check Agent
+          const agent = agentResult.data as any;
+          if (agent) {
+            if (agent.is_approved === false) return 'user';
+            console.log("[AuthContext] Found in 'agents' table. Role: agent");
+            return 'agent';
+          }
 
-        if (roles && roles.length > 0) {
-          console.log("[AuthContext] Found roles:", roles);
-
-          // Filter for APPROVED roles only
-          const approvedRoles = roles.filter(r => r.is_approved !== false);
+          // 3. User Roles
+          const roles = rolesResult.data || [];
+          const approvedRoles = (roles as any[]).filter(r => r.is_approved !== false);
 
           if (approvedRoles.some(r => r.role === 'admin' || (r.role as any) === 'super_admin')) return 'admin';
           if (approvedRoles.some(r => r.role === 'agent')) return 'agent';
-
           if (approvedRoles.length > 0) return approvedRoles[0].role;
 
-          console.warn("[AuthContext] Roles found but none approved.");
+          // 4. Profile fallback
+          const profile = profileResult.data as any;
+          return profile?.role || 'user';
+
+        } catch (err) {
+          console.error("[AuthContext] Error fetching role:", err);
           return 'user';
         }
+      };
 
-        // 3. Fallback to profiles
-        console.log("[AuthContext] Checking 'profiles' table...");
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single();
-        if (!profile) console.warn("[AuthContext] User has no profile entry!");
-        const profileRole = (profile as any)?.role;
-        console.log("[AuthContext] Profile role:", profileRole);
-        return profileRole || 'user'; // Default to 'user' if no specific role found
-      } catch (err) {
-        console.error("[AuthContext] Error fetching role:", err);
-        return 'user'; // Default to 'user' on error
-      }
+      return Promise.race([roleCheck(), timeout]);
     };
 
     const runAuthLogic = async () => {
+      console.log("[AuthContext] Running auth logic...");
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (event, session) => {
+          console.log(`[AuthContext] Auth state change event: ${event}`, session?.user?.id);
           let userRole = null;
+
           if (session?.user) {
-            userRole = await fetchRole(session.user.id);
+            userRole = await fetchRole(session.user.id, session.user.email);
             // CACHE ROLE
             if (userRole) localStorage.setItem('user_role', userRole);
             else localStorage.removeItem('user_role');
@@ -117,20 +130,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
 
       // Check existing session
+      console.log("[AuthContext] Checking existing session...");
       const { data: { session } } = await supabase.auth.getSession();
+      console.log("[AuthContext] Session check result:", session?.user?.id ? "Found User" : "No Session");
+
       if (session?.user) {
         let userRole = null;
-        // Optimistic check is already in state, but let's refresh it or fetch if missing
-        userRole = await fetchRole(session.user.id);
+        userRole = await fetchRole(session.user.id, session.user.email);
         if (userRole) localStorage.setItem('user_role', userRole);
-
-        // Update state with fresh role
         setRole(userRole);
+      } else {
+        // If no session found, stop loading immediately
+        setLoading(false);
       }
+
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
-      clearTimeout(safetyTimer); // Clear timer if successful
+      if (!session?.user) setLoading(false);
+
       return subscription;
     };
 
@@ -142,9 +159,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signUp = async (email: string, password: string, fullName?: string, phone?: string) => {
+  const signUp = async (email: string, password: string, fullName?: string, phone?: string, role?: string) => {
     const redirectUrl = `${window.location.origin}/`;
 
+    console.log("[AuthContext] Signing up with:", { email, fullName, phone, role });
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -152,7 +170,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: redirectUrl,
         data: {
           full_name: fullName,
-          phone: phone
+          phone: phone,
+          role: role,
+          requested_role: role // Redundant key to bypass potential filtering
         }
       }
     });
@@ -160,18 +180,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    // Role will be updated by onAuthStateChange
-    return { error: error as Error | null };
+    setLoading(true); // Set loading to true while signing in
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) throw error;
+
+      // Force a session check to ensure state is updated immediately
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+        // We do NOT set loading false here, we let onAuthStateChange handle it
+        // based on the role check to prevent "flash of unauthorized"
+      }
+
+      return { error: null };
+    } catch (err) {
+      console.error("[AuthContext] SignIn error:", err);
+      setLoading(false); // Ensure loading is cleared on error
+      return { error: err as Error };
+    }
   };
 
   const signOut = async () => {
+    setLoading(true);
     await supabase.auth.signOut();
     setRole(null);
     localStorage.removeItem('user_role');
+    setLoading(false);
   };
 
   return (

@@ -13,8 +13,8 @@ const Index = () => {
   return (
     <Layout>
       <Seo
-        title="Home"
-        description="Wing Way Connect - Your one-stop solution for Air Tickets, Cargo, Courier, and Visa services in Bangladesh and beyond."
+        title="Home - Global Cargo & Air Freight"
+        description="Reliable international cargo, freight, and air ticket services. Track shipments and request quotes easily."
       />
       <HeroSection />
       <TrackingBar />

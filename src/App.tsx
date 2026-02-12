@@ -17,22 +17,29 @@ import FAQ from "./pages/FAQ";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Refund from "./pages/Refund";
+import DebugAuth from "./pages/DebugAuth";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import ProfilePage from "./pages/ProfilePage";
-import AdminLayout from "./pages/admin/AdminLayout";
 import AdminAuth from "./pages/admin/AdminAuth";
 import AdminOverview from "./pages/admin/AdminOverview";
 import AdminShipments from "./pages/admin/AdminShipments";
 import AdminBookings from "./pages/admin/AdminBookings";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminUserDetails from "./pages/admin/AdminUserDetails";
 import AdminAgentProfile from "./pages/admin/AdminAgentProfile";
+import AdminSettings from "./pages/admin/AdminSettings";
+import AdminLayout from "./pages/admin/AdminLayout";
 import AgentAuth from "./pages/agent/AgentAuth";
 import AgentLayout from "./pages/agent/AgentLayout";
 import AgentDashboard from "./pages/agent/AgentDashboard";
 import AgentShipments from "./pages/agent/AgentShipments";
+import AgentProfile from "./pages/agent/AgentProfile";
 import AgentScan from "./pages/agent/AgentScan";
 import NotFound from "./pages/NotFound";
+import UserShipments from "./pages/user/UserShipments";
+import UserBookings from "./pages/user/UserBookings";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -58,21 +65,33 @@ const App = () => (
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/refund" element={<Refund />} />
               <Route path="/auth" element={<Auth />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/dashboard/profile" element={<ProfilePage />} />
+              <Route path="/debug-auth" element={<DebugAuth />} />
+
+              {/* Protected User Routes */}
+              <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['user', 'agent', 'admin']}><Dashboard /></ProtectedRoute>} />
+              <Route path="/dashboard/profile" element={<ProtectedRoute allowedRoles={['user', 'agent', 'admin']}><ProfilePage /></ProtectedRoute>} />
+              <Route path="/dashboard/shipments" element={<ProtectedRoute allowedRoles={['user', 'agent', 'admin']}><UserShipments /></ProtectedRoute>} />
+              <Route path="/dashboard/bookings" element={<ProtectedRoute allowedRoles={['user', 'agent', 'admin']}><UserBookings /></ProtectedRoute>} />
+
+              {/* Protected Admin Routes */}
               <Route path="/admin/login" element={<AdminAuth />} />
-              <Route path="/admin" element={<AdminLayout />}>
+              <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
                 <Route index element={<AdminOverview />} />
                 <Route path="shipments" element={<AdminShipments />} />
                 <Route path="bookings" element={<AdminBookings />} />
                 <Route path="users" element={<AdminUsers />} />
+                <Route path="users/:userId" element={<AdminUserDetails />} />
                 <Route path="agents/:id" element={<AdminAgentProfile />} />
+                <Route path="settings" element={<AdminSettings />} />
               </Route>
+
+              {/* Protected Agent Routes */}
               <Route path="/agent/login" element={<AgentAuth />} />
-              <Route path="/agent" element={<AgentLayout />}>
+              <Route path="/agent" element={<ProtectedRoute allowedRoles={['agent', 'admin']}><AgentLayout /></ProtectedRoute>}>
                 <Route index element={<AgentDashboard />} />
                 <Route path="shipments" element={<AgentShipments />} />
                 <Route path="scan" element={<AgentScan />} />
+                <Route path="profile" element={<AgentProfile />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

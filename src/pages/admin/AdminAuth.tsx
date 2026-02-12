@@ -27,6 +27,16 @@ export default function AdminAuth() {
     // Clear potentially stale role cache on mount
     localStorage.removeItem('user_role');
 
+    const checkAndClearSession = async () => {
+      // Logic: If on Admin Login page, and logged in user is NOT an admin, logging them out is safer
+      // to allow them to login as admin.
+      if (user && !adminLoading && !isAdmin) {
+        console.log("User logged in but not admin on Admin Login page. Signing out...");
+        await supabase.auth.signOut();
+      }
+    };
+    checkAndClearSession();
+
     if (user && !adminLoading && isAdmin) {
       navigate("/admin");
     }
@@ -42,54 +52,63 @@ export default function AdminAuth() {
 
     setIsLoading(true);
 
+    // Safety timeout to prevent infinite loading state
+    const timeoutId = setTimeout(() => {
+      if (isLoading) {
+        setIsLoading(false);
+        toast({
+          title: "Request timeout",
+          description: "The login request took too long. Please check your connection and try again.",
+          variant: "destructive"
+        });
+      }
+    }, 15000); // 15 seconds
+
     try {
       const { error } = await signIn(email, password);
       if (error) {
         toast({ title: "Login failed", description: error.message.includes("Invalid login credentials") ? "Invalid email or password" : error.message, variant: "destructive" });
       } else {
-        // STRICT ROLE CHECK
+        // STRICT ROLE CHECK - Post Login
+        // We fetch the profile directly to be 100% sure before proceeding
         const { data: { user: loggedUser } } = await supabase.auth.getUser();
 
         if (loggedUser) {
-          // STRICT EMAIL CHECK - Whitelist only
           const normalize = (e: string) => (e || '').trim().toLowerCase();
 
-          if (normalize(loggedUser.email || '') !== normalize(ADMIN_EMAIL)) {
-            await supabase.auth.signOut();
-            toast({
-              title: "Unauthorized Email",
-              description: `Email '${loggedUser.email}' is not authorized.`,
-              variant: "destructive",
-              duration: 5000
-            });
-            setIsLoading(false);
-            return;
-          }
+          // 1. Check if they are in the admins table or have the admin role
+          const [adminProfile, userRole] = await Promise.all([
+            supabase.from('admins' as any).select('id').eq('user_id', loggedUser.id).maybeSingle(),
+            supabase.from('user_roles').select('role').eq('user_id', loggedUser.id).eq('role', 'admin').maybeSingle()
+          ]);
 
-          // Check specifically for ADMIN role in tables
-          const { data: adminProfile } = await supabase.from('admins' as any).select('id').eq('user_id', loggedUser.id).maybeSingle();
-          const { data: userRole } = await supabase.from('user_roles').select('role').eq('user_id', loggedUser.id).eq('role', 'admin').maybeSingle();
+          const isAuthorizedAdmin = adminProfile.data || userRole.data || normalize(loggedUser.email || '') === normalize(ADMIN_EMAIL);
 
-          if (adminProfile || userRole) {
+          if (isAuthorizedAdmin) {
             toast({ title: "Welcome, Admin! 🛡️", description: "Redirecting to admin panel" });
             navigate("/admin");
           } else {
-            // Not an admin - KICK THEM OUT
+            console.warn("Non-admin user logged in at Admin Portal. Signing out.");
             await supabase.auth.signOut();
-            toast({ title: "Unauthorized Access", description: "This area is for Administrators only.", variant: "destructive" });
+            toast({
+              title: "Unauthorized Access",
+              description: "This portal is restricted to Administrators only.",
+              variant: "destructive"
+            });
           }
         }
       }
     } catch {
       toast({ title: "Something went wrong", description: "Please try again later", variant: "destructive" });
     } finally {
+      clearTimeout(timeoutId);
       setIsLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-hero-pattern flex items-center justify-center p-4 relative overflow-hidden">
-      <Seo title="Admin Login" description="Restricted Access - Admin Login for Wing Way Connect." />
+      <Seo title="Admin Login" description="Secure login for administrators to manage shipments, bookings, and users." />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

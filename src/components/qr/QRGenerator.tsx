@@ -70,6 +70,7 @@ export default function QRGenerator({ shipment }: QRGeneratorProps) {
               </div>
               <div class="tracking-box">
                 <div class="tracking-id">${s.tracking_id}</div>
+                ${s.short_id ? `<div style="font-size: 16px; margin-bottom: 5px;">PIN: ${s.short_id}</div>` : ''}
                 <div class="status">${s.status?.replace('_', ' ') || 'PENDING'}</div>
               </div>
             </div>

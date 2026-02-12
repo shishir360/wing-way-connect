@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Seo from "@/components/Seo";
@@ -7,8 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-
-import { Plane, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
+import PhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/style.css';
+import { supabase } from "@/integrations/supabase/client";
+import { Plane, Mail, Lock, ArrowRight, Loader2, User as UserIcon, Phone } from "lucide-react";
 
 // Import 3D images
 import airplane3D from "@/assets/airplane-3d.png";
@@ -17,26 +20,146 @@ import suitcase3D from "@/assets/suitcase-3d.png";
 import box3D from "@/assets/box-3d.png";
 
 export default function Auth() {
+  const [isSignUp, setIsSignUp] = useState(false);
+  // Signup State
+  const [step, setStep] = useState<'details' | 'otp'>('details');
+  const [otpCode, setOtpCode] = useState("");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // Removed signUp, using custom flow. 
+  // We strictly use signIn for login, and custom Edge Function for signup.
   const { signIn, user, role } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user) {
-      // If role is loaded, use it. If not, default to dashboard for standard users.
-      // We don't want to block access if role is taking a moment, but ideally role is fast.
-      if (role === 'admin') navigate("/admin");
-      else if (role === 'agent') navigate("/agent");
-      else navigate("/dashboard");
+    if (user && role && !isLoading) {
+      console.log(`[Auth] User logged in with role: ${role}. Redirecting...`);
+      if (role === 'admin') {
+        navigate("/admin");
+      } else if (role === 'agent') {
+        navigate("/agent");
+      } else {
+        navigate("/dashboard");
+      }
     }
-  }, [user, role, navigate]);
+  }, [user, role, navigate, isLoading]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password || !fullName || !phone) {
+      toast({ title: "Please fill all fields", variant: "destructive" });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Call Edge Function to send OTP
+      const { data, error } = await supabase.functions.invoke('agent-email-verification', {
+        body: {
+          action: 'send',
+          email,
+          fullName,
+          phone,
+          role: 'user'
+        }
+      });
+
+      if (error) {
+        console.error("Edge Function Invoke Error:", error);
+        let errorMessage = error.message;
+        try {
+          if ('context' in error) {
+            const context = (error as any).context;
+            if (context && typeof context.json === 'function') {
+              const json = await context.json();
+              if (json && json.error) errorMessage = json.error;
+            }
+          }
+        } catch (e) {
+          console.error("Failed to parse error JSON:", e);
+        }
+        throw new Error(errorMessage);
+      }
+      if (data.error) throw new Error(data.error);
+
+      toast({
+        title: "Verification Code Sent",
+        description: "Please check your email for the 6-digit code.",
+        className: "bg-blue-500 text-white border-blue-600"
+      });
+      setStep('otp');
+
+    } catch (err: any) {
+      console.error("OTP Send error:", err);
+      toast({ title: "Failed to send code", description: err.message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpCode || otpCode.length < 6) {
+      toast({ title: "Invalid Code", description: "Please enter the 6-digit code.", variant: "destructive" });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Call Edge Function to verify OTP and create user
+      const { data, error } = await supabase.functions.invoke('agent-email-verification', {
+        body: {
+          action: 'verify',
+          email,
+          code: otpCode,
+          password,
+          role: 'user'
+        }
+      });
+
+      if (error) {
+        console.error("Edge Function Invoke Error:", error);
+        let errorMessage = error.message;
+        try {
+          if ('context' in error) {
+            const context = (error as any).context;
+            if (context && typeof context.json === 'function') {
+              const json = await context.json();
+              if (json && json.error) errorMessage = json.error;
+            }
+          }
+        } catch (e) {
+          console.error("Failed to parse error JSON:", e);
+        }
+        throw new Error(errorMessage);
+      }
+      if (data.error) throw new Error(data.error);
+
+      toast({ title: "Verified Successfully!", description: "Logging you in..." });
+
+      // Auto Login
+      const { error: loginError } = await signIn(email, password);
+      if (loginError) {
+        throw loginError;
+      }
+      // Navigation will happen via useEffect when user state updates
+
+    } catch (err: any) {
+      console.error("Verification error:", err);
+      toast({ title: "Verification Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Basic validation
@@ -74,11 +197,11 @@ export default function Auth() {
           });
         }
       } else {
+        // Post-login handling is done via useEffect (redirects)
         toast({
           title: "Welcome!",
           description: "Successfully logged in",
         });
-        // Navigation handled by useEffect when user/role updates
       }
     } catch (err) {
       console.error(err);
@@ -94,7 +217,7 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-hero-pattern flex items-center justify-center p-4 relative overflow-hidden">
-      <Seo title="Login" description="Login to track shipments and manage your bookings with Wing Way Connect." />
+      <Seo title="Authentication" description="Login or register securely to access your account." />
       {/* Floating 3D images */}
       <motion.img
         src={airplane3D}
@@ -143,41 +266,115 @@ export default function Auth() {
         <div className="bg-card/95 backdrop-blur-xl rounded-3xl border border-border/50 p-8 shadow-2xl">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold font-display mb-2">
-              Login to your account
+              {isSignUp ? (step === 'otp' ? "Verify Email" : "Create Account") : "Login to your account"}
             </h1>
             <p className="text-muted-foreground">
-              Track your shipments
+              {isSignUp ? (step === 'otp' ? "Enter the code sent to your email" : "Track your shipments & manage bookings") : "Track your shipments"}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label className="text-sm font-medium">Email</Label>
-              <div className="relative mt-1.5">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  type="email"
-                  placeholder="your@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 h-12 rounded-xl bg-muted/50"
-                />
-              </div>
-            </div>
+          <form onSubmit={isSignUp ? (step === 'otp' ? handleVerifyOtp : handleSendOtp) : handleSignIn} className="space-y-4">
 
-            <div>
-              <Label className="text-sm font-medium">Password</Label>
-              <div className="relative mt-1.5">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 h-12 rounded-xl bg-muted/50"
-                />
+            {isSignUp && step === 'otp' ? (
+              // OTP Input
+              <div>
+                <Label className="text-sm font-medium">Verification Code</Label>
+                <div className="relative mt-1.5">
+                  <Input
+                    placeholder="123456"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    className="pl-4 h-12 rounded-xl bg-muted/50 text-center text-lg tracking-widest"
+                    maxLength={6}
+                    required
+                  />
+                </div>
+                <div className="text-center mt-2">
+                  <Button variant="link" size="sm" type="button" onClick={() => setStep('details')} className="text-xs text-muted-foreground">
+                    Wrong email? Go back
+                  </Button>
+                </div>
               </div>
-            </div>
+            ) : isSignUp ? (
+              // Sign Up Form
+              <>
+                <div>
+                  <Label className="text-sm font-medium">Full Name</Label>
+                  <div className="relative mt-1.5">
+                    <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      placeholder="Your Name"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="pl-10 h-12 rounded-xl bg-muted/50"
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Phone Number</Label>
+                  <div className="mt-1.5 relative">
+                    <PhoneInput
+                      country={'bd'}
+                      value={phone}
+                      onChange={phone => setPhone(phone)}
+                      enableSearch={true}
+                      inputStyle={{
+                        width: '100%',
+                        height: '3rem',
+                        fontSize: '0.875rem',
+                        paddingLeft: '50px',
+                        borderRadius: '0.75rem',
+                        backgroundColor: 'hsl(var(--muted)/0.5)',
+                        borderColor: 'hsl(var(--border))'
+                      }}
+                      buttonStyle={{
+                        borderRadius: '0.75rem 0 0 0.75rem',
+                        backgroundColor: 'hsl(var(--muted)/0.5)',
+                        borderColor: 'hsl(var(--border))'
+                      }}
+                    />
+                  </div>
+                </div>
+              </>
+            ) : null}
+
+            {/* Email & Password (Common) */}
+            {(step === 'details' || !isSignUp) && (
+              <>
+                <div>
+                  <Label className="text-sm font-medium">Email</Label>
+                  <div className="relative mt-1.5">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      type="email"
+                      placeholder="your@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="pl-10 h-12 rounded-xl bg-muted/50"
+                      required
+                      autoComplete="email"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Password</Label>
+                  <div className="relative mt-1.5">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pl-10 h-12 rounded-xl bg-muted/50"
+                      required
+                      autoComplete="current-password"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
             <Button
               type="submit"
@@ -188,7 +385,7 @@ export default function Auth() {
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <>
-                  Login
+                  {isSignUp ? (step === 'otp' ? "Verify & Register" : "Sign Up Now") : "Login"}
                   <ArrowRight className="h-5 w-5 ml-2" />
                 </>
               )}
@@ -196,10 +393,22 @@ export default function Auth() {
           </form>
 
           {/* Quick Login Info */}
-          <div className="mt-6 p-4 bg-muted/50 rounded-xl">
-            <p className="text-xs text-center text-muted-foreground">
-              Don't have an account? Contact support.
-            </p>
+          <div className="mt-6 p-4 bg-muted/50 rounded-xl text-center">
+            {isSignUp ? (
+              <p className="text-sm text-muted-foreground">
+                Already have an account?{" "}
+                <button type="button" onClick={() => { setIsSignUp(false); setStep('details'); }} className="text-primary hover:underline font-semibold">
+                  Sign In
+                </button>
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Don't have an account?{" "}
+                <button type="button" onClick={() => { setIsSignUp(true); setStep('details'); }} className="text-primary hover:underline font-semibold">
+                  Create Account
+                </button>
+              </p>
+            )}
           </div>
         </div>
 
