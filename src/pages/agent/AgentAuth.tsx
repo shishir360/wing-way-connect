@@ -16,9 +16,7 @@ import Seo from "@/components/Seo";
 export default function AgentAuth() {
   const [isSignUp, setIsSignUp] = useState(false);
   // Signup State
-  const [step, setStep] = useState<'details' | 'otp'>('details');
-  const [otpCode, setOtpCode] = useState("");
-
+  // Registration Details
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
 
@@ -193,10 +191,10 @@ export default function AgentAuth() {
               <Truck className="h-8 w-8 text-primary" />
             </div>
             <h1 className="text-2xl font-bold font-display mb-2">
-              {isSignUp ? (step === 'otp' ? "Verify Email" : "Agent Registration") : "Agent Login"}
+              {isSignUp ? "Agent Registration" : "Agent Login"}
             </h1>
             <p className="text-muted-foreground text-sm">
-              {isSignUp ? (step === 'otp' ? "Enter the code sent to your email" : "Join our delivery fleet today") : "Delivery Agent Portal"}
+              {isSignUp ? "Join our delivery fleet today" : "Delivery Agent Portal"}
             </p>
           </div>
 
