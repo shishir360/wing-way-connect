@@ -218,6 +218,17 @@ export default function AgentScan() {
         is_current: true, // Mark this as the latest event
       });
 
+      // 5. SEND NOTIFICATIONS (Async)
+      supabase.functions.invoke('notify-shipment-update', {
+        body: {
+          shipmentId: shipmentInfo.id,
+          status: newStatus,
+          location: location || null,
+          scannedBy: user.id,
+          description: scanTypeLabels[scanType] || scanType
+        }
+      });
+
       if (window.navigator && window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
       setScanSuccess(true);
       toast({ title: "Scan Saved! ✅", description: `${scanTypeLabels[scanType]} recorded.` });
@@ -367,7 +378,7 @@ export default function AgentScan() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Scan Action</Label>
-              {designatedStatus && designatedStatus !== 'out_for_delivery' ? (
+              {designatedStatus && designatedStatus !== 'out_for_delivery' && designatedStatus !== 'checkpoint' ? (
                 <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl flex items-center justify-between">
                   <span className="font-medium text-foreground">{scanTypeLabels[designatedStatus]}</span>
                   <Badge className="bg-primary text-primary-foreground">Auto-Selected</Badge>

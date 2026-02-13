@@ -68,10 +68,10 @@ const App = () => (
               <Route path="/debug-auth" element={<DebugAuth />} />
 
               {/* Protected User Routes */}
-              <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['user', 'agent', 'admin']}><Dashboard /></ProtectedRoute>} />
-              <Route path="/dashboard/profile" element={<ProtectedRoute allowedRoles={['user', 'agent', 'admin']}><ProfilePage /></ProtectedRoute>} />
-              <Route path="/dashboard/shipments" element={<ProtectedRoute allowedRoles={['user', 'agent', 'admin']}><UserShipments /></ProtectedRoute>} />
-              <Route path="/dashboard/bookings" element={<ProtectedRoute allowedRoles={['user', 'agent', 'admin']}><UserBookings /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['user', 'admin']}><Dashboard /></ProtectedRoute>} />
+              <Route path="/dashboard/profile" element={<ProtectedRoute allowedRoles={['user', 'admin']}><ProfilePage /></ProtectedRoute>} />
+              <Route path="/dashboard/shipments" element={<ProtectedRoute allowedRoles={['user', 'admin']}><UserShipments /></ProtectedRoute>} />
+              <Route path="/dashboard/bookings" element={<ProtectedRoute allowedRoles={['user', 'admin']}><UserBookings /></ProtectedRoute>} />
 
               {/* Protected Admin Routes */}
               <Route path="/admin/login" element={<AdminAuth />} />
