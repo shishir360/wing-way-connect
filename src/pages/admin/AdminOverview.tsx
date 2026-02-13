@@ -178,7 +178,8 @@ export default function AdminOverview() {
       desc: "Gross revenue",
       icon: DollarSign,
       color: "text-emerald-600",
-      bg: "bg-emerald-50"
+      bg: "bg-emerald-50",
+      path: null
     },
     {
       label: "Total Shipments",
@@ -187,7 +188,8 @@ export default function AdminOverview() {
       desc: `${shipments.filter(s => s.status === 'delivered').length} delivered`,
       icon: Package,
       color: "text-blue-600",
-      bg: "bg-blue-50"
+      bg: "bg-blue-50",
+      path: "/admin/shipments"
     },
     {
       label: "Flight Bookings",
@@ -196,7 +198,8 @@ export default function AdminOverview() {
       desc: "All time",
       icon: Plane,
       color: "text-violet-600",
-      bg: "bg-violet-50"
+      bg: "bg-violet-50",
+      path: "/admin/bookings"
     },
     {
       label: "Active Users",
@@ -205,7 +208,8 @@ export default function AdminOverview() {
       desc: "Registered users",
       icon: Users,
       color: "text-amber-600",
-      bg: "bg-amber-50"
+      bg: "bg-amber-50",
+      path: "/admin/users"
     },
   ];
 
@@ -242,7 +246,8 @@ export default function AdminOverview() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="bg-card p-6 rounded-2xl border border-border/40 shadow-sm hover:shadow-md transition-all group"
+                onClick={() => stat.path && navigate(stat.path)}
+                className={`bg-card p-6 rounded-2xl border border-border/40 shadow-sm hover:shadow-md transition-all group ${stat.path ? 'cursor-pointer' : ''}`}
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className={`p-3 rounded-xl ${stat.bg} group-hover:scale-110 transition-transform`}>
@@ -501,8 +506,6 @@ export default function AdminOverview() {
 
         </>
       )}
-        }}
-      />
     </div>
   );
 }
