@@ -13,10 +13,13 @@ import { useAgent } from "@/hooks/useAgent";
 import { Truck, Mail, Lock, ArrowRight, Loader2, User as UserIcon } from "lucide-react";
 import Seo from "@/components/Seo";
 
+
 export default function AgentAuth() {
   const [isSignUp, setIsSignUp] = useState(false);
   // Signup State
-  // Registration Details
+  const [step, setStep] = useState<'details' | 'otp'>('details');
+  const [otpCode, setOtpCode] = useState("");
+
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
 
@@ -38,7 +41,6 @@ export default function AgentAuth() {
       // Redirect or show access denied instead.
       if (user && !agentLoading && !isAgent) {
         console.log("Logged in but isAgent is false. Showing pending/denied state instead of signing out.");
-        // await supabase.auth.signOut(); // DISABLED: Aggressive signout causing loops
       }
     };
     checkAndClearSession();
@@ -50,7 +52,7 @@ export default function AgentAuth() {
     }
   }, [user, isAgent, isApproved, agentLoading, navigate]);
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password || !fullName || !phone) {
       toast({ title: "Please fill all fields", variant: "destructive" });
@@ -59,13 +61,75 @@ export default function AgentAuth() {
 
     setIsLoading(true);
     try {
-      // Call Edge Function to create user instantly
+      // Call Edge Function to send OTP
       const { data, error } = await supabase.functions.invoke('agent-email-verification', {
         body: {
-          action: 'instant',
+          action: 'send',
           email,
           fullName,
           phone,
+          role: 'agent'
+        }
+      });
+
+      if (error) {
+        console.error("Edge Function Invoke Error:", error);
+        let errorMessage = error.message;
+        try {
+          if ('context' in error) {
+            const context = (error as any).context;
+            if (context && typeof context.json === 'function') {
+              const json = await context.json();
+              if (json && json.error) errorMessage = json.error;
+            }
+          }
+        } catch (e) {
+          console.error("Failed to parse error JSON:", e);
+        }
+        throw new Error(errorMessage);
+      }
+      if (data.error) throw new Error(data.error);
+
+      if (data.dev_code) {
+        toast({
+          title: "Dev Mode: Code Generated",
+          description: `Your code is: ${data.dev_code}`,
+          duration: 10000,
+          className: "bg-yellow-500 text-black border-yellow-600"
+        });
+        console.log("Dev Code:", data.dev_code);
+      } else {
+        toast({
+          title: "Verification Code Sent",
+          description: "Please check your email for the 6-digit code.",
+          className: "bg-blue-500 text-white border-blue-600"
+        });
+      }
+      setStep('otp');
+
+    } catch (err: any) {
+      console.error("OTP Send error:", err);
+      toast({ title: "Failed to send code", description: err.message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpCode || otpCode.length < 6) {
+      toast({ title: "Invalid Code", description: "Please enter the 6-digit code.", variant: "destructive" });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Call Edge Function to verify OTP and create user
+      const { data, error } = await supabase.functions.invoke('agent-email-verification', {
+        body: {
+          action: 'verify',
+          email,
+          code: otpCode,
           password,
           role: 'agent'
         }
@@ -73,15 +137,23 @@ export default function AgentAuth() {
 
       if (error) {
         console.error("Edge Function Invoke Error:", error);
-        throw new Error(error.message || "Signup failed");
+        let errorMessage = error.message;
+        try {
+          if ('context' in error) {
+            const context = (error as any).context;
+            if (context && typeof context.json === 'function') {
+              const json = await context.json();
+              if (json && json.error) errorMessage = json.error;
+            }
+          }
+        } catch (e) {
+          console.error("Failed to parse error JSON:", e);
+        }
+        throw new Error(errorMessage);
       }
-      console.log("[DEBUG] Edge Function Response Data:", data);
-      if (data.error) {
-        console.error("[DEBUG] Edge Function Logical Error:", data.error);
-        throw new Error(data.error);
-      }
+      if (data.error) throw new Error(data.error);
 
-      toast({ title: "Account Created!", description: "Logging you in..." });
+      toast({ title: "Verified Successfully!", description: "Logging you in..." });
 
       // Auto Login
       const { error: loginError } = await signIn(email, password);
@@ -91,8 +163,8 @@ export default function AgentAuth() {
       // Navigation will happen via useEffect when user state updates
 
     } catch (err: any) {
-      console.error("Signup error:", err);
-      toast({ title: "Signup Failed", description: err.message, variant: "destructive" });
+      console.error("Verification error:", err);
+      toast({ title: "Verification Failed", description: err.message, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -115,7 +187,7 @@ export default function AgentAuth() {
         if (loggedUser) {
           const normalize = (e: string) => (e || '').trim().toLowerCase();
 
-          // 1. STRICT ADMIN REDIRECT - If an admin logins here, redirect them to admin portal
+          // 1. STRICT ADMIN REDIRECT 
           if (normalize(loggedUser.email || '') === 'shishirmd681@gmail.com') {
             toast({
               title: "Admin Account Filter",
@@ -140,10 +212,8 @@ export default function AgentAuth() {
               navigate("/agent");
             } else {
               toast({ title: "Pending Approval", description: "Your agent account is currently under review.", variant: "destructive" });
-              // Stay logged in to see the pending screen
             }
           } else {
-            // Not an agent? KICK OUT
             console.warn("User is not an agent. Signing out.");
             await supabase.auth.signOut();
             toast({ title: "Access Denied", description: "This portal is restricted to Registered Agents.", variant: "destructive" });
@@ -195,15 +265,35 @@ export default function AgentAuth() {
               <Truck className="h-8 w-8 text-primary" />
             </div>
             <h1 className="text-2xl font-bold font-display mb-2">
-              {isSignUp ? "Agent Registration" : "Agent Login"}
+              {isSignUp ? (step === 'otp' ? "Verify Email" : "Agent Registration") : "Agent Login"}
             </h1>
             <p className="text-muted-foreground text-sm">
-              {isSignUp ? "Join our delivery fleet today" : "Delivery Agent Portal"}
+              {isSignUp ? (step === 'otp' ? "Enter the code sent to your email" : "Join our delivery fleet today") : "Delivery Agent Portal"}
             </p>
           </div>
 
-          <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-4">
-            {isSignUp && (
+          <form onSubmit={isSignUp ? (step === 'otp' ? handleVerifyOtp : handleSendOtp) : handleSignIn} className="space-y-4">
+            {isSignUp && step === 'otp' ? (
+              // OTP Input
+              <div>
+                <Label className="text-sm font-medium">Verification Code</Label>
+                <div className="relative mt-1.5">
+                  <Input
+                    placeholder="123456"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    className="pl-4 h-12 rounded-xl bg-muted/50 text-center text-lg tracking-widest"
+                    maxLength={6}
+                    required
+                  />
+                </div>
+                <div className="text-center mt-2">
+                  <Button variant="link" size="sm" type="button" onClick={() => setStep('details')} className="text-xs text-muted-foreground">
+                    Wrong email? Go back
+                  </Button>
+                </div>
+              </div>
+            ) : isSignUp ? (
               // Sign Up Details Step
               <>
                 <div>
@@ -259,10 +349,8 @@ export default function AgentAuth() {
                   </div>
                 </div>
               </>
-            )}
-
-            {/* Login Fields (only show if NOT signup) */}
-            {!isSignUp && (
+            ) : (
+              // Login Fields
               <>
                 <div>
                   <Label className="text-sm font-medium">Email</Label>
@@ -283,7 +371,7 @@ export default function AgentAuth() {
 
             <Button type="submit" disabled={isLoading} className="w-full h-12 rounded-xl text-base bg-cta hover:bg-cta/90 text-cta-foreground shadow-lg">
               {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> :
-                <>{isSignUp ? "Create Account" : "Login"} <ArrowRight className="h-5 w-5 ml-2" /></>
+                <>{isSignUp ? (step === 'otp' ? "Verify & Register" : "Sign Up Now") : "Login"} <ArrowRight className="h-5 w-5 ml-2" /></>
               }
             </Button>
           </form>
@@ -292,14 +380,14 @@ export default function AgentAuth() {
             {isSignUp ? (
               <p className="text-sm text-muted-foreground">
                 Already have an account?{" "}
-                <button type="button" onClick={() => setIsSignUp(false)} className="text-primary hover:underline font-semibold">
+                <button type="button" onClick={() => { setIsSignUp(false); setStep('details'); }} className="text-primary hover:underline font-semibold">
                   Sign In
                 </button>
               </p>
             ) : (
               <p className="text-sm text-muted-foreground">
                 Don't have an agent account?{" "}
-                <button type="button" onClick={() => setIsSignUp(true)} className="text-primary hover:underline font-semibold">
+                <button type="button" onClick={() => { setIsSignUp(true); setStep('details'); }} className="text-primary hover:underline font-semibold">
                   Join Now
                 </button>
               </p>
@@ -314,3 +402,4 @@ export default function AgentAuth() {
     </div>
   );
 }
+

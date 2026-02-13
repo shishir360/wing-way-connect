@@ -1,0 +1,7 @@
+{
+    "imports": {
+        "supabase": "npm:@supabase/supabase-js@2.95.3",
+        "resend": "npm:resend@6.9.2",
+        "server": "https://deno.land/std@0.190.0/http/server.ts"
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "lib": [
+            "deno.ns",
+            "deno.unstable",
+            "deno.window"
+        ]
+    },
+    "imports": {
+        "@supabase/supabase-js": "npm:@supabase/supabase-js@2.95.3",
+        "resend": "npm:resend@6.9.2"
+    },
+    "tasks": {
+        "serve": "supabase functions serve agent-email-verification",
+        "run": "deno run --allow-net --allow-env supabase/functions/agent-email-verification/index.ts"
+    }
+}
