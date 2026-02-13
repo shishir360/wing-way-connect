@@ -470,9 +470,8 @@ export default function AdminOverview() {
                   key={i}
                   className="flex items-center gap-4 p-4 rounded-xl border border-border/40 hover:bg-muted/30 transition-colors cursor-pointer group"
                   onClick={() => {
-                    if (activity.type === 'cargo' && activity.raw) {
-                      setSelectedShipment(activity.raw);
-                      setIsDialogOpen(true);
+                    if (activity.type === 'cargo') {
+                      navigate(`/admin/shipments?search=${activity.id}`);
                     } else {
                       navigate(`/admin/bookings?search=${activity.id}`);
                     }
