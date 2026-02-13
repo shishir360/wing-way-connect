@@ -389,7 +389,7 @@ export default function AdminOverview() {
                     className="flex items-start gap-4 p-3 rounded-xl border border-border/40 hover:bg-muted/30 transition-colors cursor-pointer group"
                     onClick={() => {
                       // Reverted to navigation
-                      navigate(`/admin/shipments?search=${activity.shipments?.tracking_id}`);
+                      navigate(`/admin/shipments/${activity.shipments?.id || activity.shipment_id}`);
                     }}
                   >
                     <div className="mt-1 relative">
@@ -467,7 +467,13 @@ export default function AdminOverview() {
                   className="flex items-center gap-4 p-4 rounded-xl border border-border/40 hover:bg-muted/30 transition-colors cursor-pointer group"
                   onClick={() => {
                     if (activity.type === 'cargo') {
-                      navigate(`/admin/shipments?search=${activity.id}`);
+                      // Navigate to details page
+                      if (activity.raw && activity.raw.id) {
+                        navigate(`/admin/shipments/${activity.raw.id}`);
+                      } else {
+                        // Fallback
+                        navigate(`/admin/shipments`);
+                      }
                     } else {
                       navigate(`/admin/bookings?search=${activity.id}`);
                     }

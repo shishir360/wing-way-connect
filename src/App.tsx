@@ -23,6 +23,7 @@ import Dashboard from "./pages/Dashboard";
 import ProfilePage from "./pages/ProfilePage";
 import AdminAuth from "./pages/admin/AdminAuth";
 import AdminOverview from "./pages/admin/AdminOverview";
+import ShipmentDetailsPage from "./pages/admin/ShipmentDetailsPage";
 import AdminShipments from "./pages/admin/AdminShipments";
 import AdminBookings from "./pages/admin/AdminBookings";
 import AdminUsers from "./pages/admin/AdminUsers";
@@ -78,6 +79,7 @@ const App = () => (
               <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
                 <Route index element={<AdminOverview />} />
                 <Route path="shipments" element={<AdminShipments />} />
+                <Route path="shipments/:id" element={<ShipmentDetailsPage />} />
                 <Route path="bookings" element={<AdminBookings />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="users/:userId" element={<AdminUserDetails />} />

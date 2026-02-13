@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Seo from "@/components/Seo";
 import { useAdminShipments } from "@/hooks/useAdminData";
 import { Button } from "@/components/ui/button";
@@ -7,15 +8,9 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Search, RefreshCw, ScanLine } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import QRGenerator from "@/components/qr/QRGenerator";
 import QRScanner from "@/components/qr/QRScanner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import ShipmentDetailsDialog from "@/components/admin/ShipmentDetailsDialog";
 
 const shipmentStatuses = [
   "pending", "pickup_scheduled", "picked_up", "in_transit",
@@ -30,11 +25,10 @@ const statusLabels: Record<string, string> = {
 
 export default function AdminShipments() {
   const { shipments, loading, updateShipmentStatus, refetch } = useAdminShipments();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [updating, setUpdating] = useState<string | null>(null);
-  const [selectedShipment, setSelectedShipment] = useState<any | null>(null);
-  const [timeline, setTimeline] = useState<any[]>([]);
   const [showScanner, setShowScanner] = useState(false);
   const [agents, setAgents] = useState<any[]>([]);
   const { toast } = useToast();
@@ -61,9 +55,7 @@ export default function AdminShipments() {
         is_current: true,
       });
       toast({ title: "Status Updated", description: `${trackingId} → ${statusLabels[newStatus]}` });
-      if (selectedShipment && selectedShipment.id === id) {
-        fetchTimeline(id); // Refresh timeline if viewing details
-      }
+
     } catch (e: any) {
       toast({ title: "Update Failed", description: e.message, variant: "destructive" });
     } finally {
@@ -101,18 +93,10 @@ export default function AdminShipments() {
     }
   };
 
-  const fetchTimeline = async (shipmentId: string) => {
-    const { data } = await supabase
-      .from('shipment_timeline')
-      .select('*')
-      .eq('shipment_id', shipmentId)
-      .order('created_at', { ascending: false });
-    setTimeline(data || []);
-  };
+
 
   const handleRowClick = (shipment: any) => {
-    setSelectedShipment(shipment);
-    fetchTimeline(shipment.id);
+    navigate(`/admin/shipments/${shipment.id}`);
   };
 
   const handleScanResult = async (data: string) => {
@@ -129,21 +113,19 @@ export default function AdminShipments() {
       const found = shipments.find(s => s.tracking_id === trackingId);
 
       if (found) {
-        setSelectedShipment(found);
-        fetchTimeline(found.id);
+        navigate(`/admin/shipments/${found.id}`);
         setShowScanner(false);
         toast({ title: "Shipment Found", description: `Opened details for ${trackingId}` });
       } else {
         // 2. If not found locally, fetch from DB
         const { data: remoteShipment } = await supabase
           .from('shipments')
-          .select('*')
+          .select('id')
           .or(`tracking_id.eq.${trackingId},short_id.eq.${trackingId}`)
           .maybeSingle();
 
         if (remoteShipment) {
-          setSelectedShipment(remoteShipment);
-          fetchTimeline(remoteShipment.id);
+          navigate(`/admin/shipments/${remoteShipment.id}`);
           setShowScanner(false);
           toast({ title: "Shipment Found", description: `Opened details for ${trackingId}` });
         } else {
@@ -275,11 +257,7 @@ export default function AdminShipments() {
       )}
 
       {/* DETAILED SHIPMENT DIALOG */}
-      <ShipmentDetailsDialog
-        shipment={selectedShipment}
-        open={!!selectedShipment}
-        onOpenChange={(open) => !open && setSelectedShipment(null)}
-      />
+
     </div>
   );
 }

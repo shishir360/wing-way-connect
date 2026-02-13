@@ -14,7 +14,7 @@ import {
 import { format } from "date-fns";
 
 import FlightDetailsDialog from "@/components/admin/FlightDetailsDialog";
-import ShipmentDetailsDialog from "@/components/admin/ShipmentDetailsDialog";
+
 
 export default function AdminUserDetails() {
     const { userId } = useParams();
@@ -24,7 +24,6 @@ export default function AdminUserDetails() {
     const [shipments, setShipments] = useState<any[]>([]);
     const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedShipment, setSelectedShipment] = useState<any | null>(null);
     const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
 
     useEffect(() => {
@@ -183,7 +182,7 @@ export default function AdminUserDetails() {
                         </div>
                     ) : (
                         activeShipments.map(shipment => (
-                            <ShipmentCard key={shipment.id} shipment={shipment} onClick={() => setSelectedShipment(shipment)} />
+                            <ShipmentCard key={shipment.id} shipment={shipment} onClick={() => navigate(`/admin/shipments/${shipment.id}`)} />
                         ))
                     )}
                 </TabsContent>
@@ -195,7 +194,7 @@ export default function AdminUserDetails() {
                         </div>
                     ) : (
                         pastShipments.map(shipment => (
-                            <ShipmentCard key={shipment.id} shipment={shipment} onClick={() => setSelectedShipment(shipment)} />
+                            <ShipmentCard key={shipment.id} shipment={shipment} onClick={() => navigate(`/admin/shipments/${shipment.id}`)} />
                         ))
                     )}
                 </TabsContent>
@@ -215,7 +214,7 @@ export default function AdminUserDetails() {
                 <TabsContent value="all" className="pt-6 space-y-4">
                     <div className="space-y-4">
                         {shipments.map(shipment => (
-                            <ShipmentCard key={shipment.id} shipment={shipment} onClick={() => setSelectedShipment(shipment)} />
+                            <ShipmentCard key={shipment.id} shipment={shipment} onClick={() => navigate(`/admin/shipments/${shipment.id}`)} />
                         ))}
                         {bookings.map(booking => (
                             <BookingCard key={booking.id} booking={booking} onClick={() => setSelectedBooking(booking)} />
@@ -224,11 +223,7 @@ export default function AdminUserDetails() {
                 </TabsContent>
             </Tabs>
 
-            <ShipmentDetailsDialog
-                shipment={selectedShipment}
-                open={!!selectedShipment}
-                onOpenChange={(open) => !open && setSelectedShipment(null)}
-            />
+
 
             <FlightDetailsDialog
                 booking={selectedBooking}

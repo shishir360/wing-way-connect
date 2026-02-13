@@ -357,7 +357,7 @@ function ShipmentCard({ shipment, isHistory }: { shipment: any, isHistory?: bool
                                 </div>
                             </div>
                             <Button variant="outline" size="sm" asChild>
-                                <a href={`/admin/shipments?id=${shipment.id}`} target="_blank" rel="noreferrer">
+                                <a href={`/admin/shipments/${shipment.id}`} target="_blank" rel="noreferrer">
                                     View <ExternalLink className="h-3 w-3 ml-2" />
                                 </a>
                             </Button>
