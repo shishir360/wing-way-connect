@@ -10,7 +10,6 @@ import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import ShipmentDetailsDialog from "@/components/admin/ShipmentDetailsDialog";
 
 export default function AdminOverview() {
   const { shipments, loading: sLoading } = useAdminShipments();
@@ -18,8 +17,6 @@ export default function AdminOverview() {
   const { profiles, loading: pLoading } = useAdminProfiles();
   const navigate = useNavigate();
   const [agentActivity, setAgentActivity] = useState<any[]>([]);
-  const [selectedShipment, setSelectedShipment] = useState<any | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Helper to check if item is valid revenue (not cancelled)
   const isValid = (status: string) => !['cancelled', 'rejected'].includes(status.toLowerCase());
@@ -386,14 +383,8 @@ export default function AdminOverview() {
                     key={activity.id}
                     className="flex items-start gap-4 p-3 rounded-xl border border-border/40 hover:bg-muted/30 transition-colors cursor-pointer group"
                     onClick={() => {
-                      const foundShipment = shipments.find(s => s.id === activity.shipment_id);
-                      if (foundShipment) {
-                        setSelectedShipment(foundShipment);
-                        setIsDialogOpen(true);
-                      } else {
-                        // Fallback if not found in current list (rare)
-                        navigate(`/admin/shipments?search=${activity.shipments?.tracking_id}`);
-                      }
+                      // Reverted to navigation
+                      navigate(`/admin/shipments?search=${activity.shipments?.tracking_id}`);
                     }}
                   >
                     <div className="mt-1 relative">
@@ -510,14 +501,6 @@ export default function AdminOverview() {
 
         </>
       )}
-
-      {/* Shipment Details Validator */}
-      <ShipmentDetailsDialog
-        shipment={selectedShipment}
-        open={isDialogOpen}
-        onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) setSelectedShipment(null);
         }}
       />
     </div>
