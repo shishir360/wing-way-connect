@@ -149,7 +149,7 @@ export default function AgentScan() {
         handover: "Handed Over",
         in_transit: "In Transit",
         customs: "Customs Cleared",
-        checkpoint: "Checkpoint Passed",
+        checkpoint: "Customs Cleared",
         out_for_delivery: "Out for Delivery",
         delivery: "Delivered"
       };
@@ -180,7 +180,7 @@ export default function AgentScan() {
         handover: 'in_transit',
         in_transit: 'in_transit',
         customs: 'customs',
-        checkpoint: 'in_transit',
+        checkpoint: 'customs',
         out_for_delivery: 'out_for_delivery',
         delivery: 'delivered'
       };
@@ -256,7 +256,7 @@ export default function AgentScan() {
     handover: "Handed Over",
     in_transit: "In Transit",
     customs: "Customs Cleared",
-    checkpoint: "Checkpoint Passed",
+    checkpoint: "Customs Cleared",
     out_for_delivery: "Out for Delivery",
     delivery: "Delivered"
   };
@@ -401,7 +401,7 @@ export default function AgentScan() {
                         <SelectItem key="transit" value="in_transit">In Transit</SelectItem>,
                         <SelectItem key="customs" value="customs">Customs Clearance</SelectItem>,
                         <SelectItem key="out" value="out_for_delivery">Out for Delivery</SelectItem>,
-                        <SelectItem key="check" value="checkpoint">Checkpoint (General)</SelectItem>,
+                        <SelectItem key="check" value="checkpoint">Customs Cleared (Checkpoint)</SelectItem>,
                         <SelectItem key="del" value="delivery">Delivery (Completed)</SelectItem>
                       ]
                     )}
