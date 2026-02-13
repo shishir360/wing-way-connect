@@ -21,16 +21,38 @@ export function useAgent() {
   const checkAgentRole = async () => {
     if (!user) return;
     try {
-      const { data, error } = await supabase
+      // 1. Check user_roles first (preferred)
+      const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role, is_approved')
         .eq('user_id', user.id)
         .eq('role', 'agent')
         .maybeSingle();
 
-      if (error) throw error;
-      setIsAgent(!!data);
-      setIsApproved(!!data?.is_approved);
+      if (roleData) {
+        setIsAgent(true);
+        setIsApproved(!!roleData.is_approved);
+        return;
+      }
+
+      // 2. Fallback: Check agents table (for initial signup/legacy)
+      const { data: agentData, error: agentError } = await supabase
+        .from('agents' as any)
+        .select('id, is_approved')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (agentData) {
+        setIsAgent(true);
+        setIsApproved(!!(agentData as any).is_approved);
+      } else {
+        setIsAgent(false);
+        setIsApproved(false);
+      }
+
+      if (roleError && !agentData) console.error("Error checking user_roles:", roleError);
+      if (agentError) console.error("Error checking agents table:", agentError);
+
     } catch (error) {
       console.error('Error checking agent role:', error);
       setIsAgent(false);

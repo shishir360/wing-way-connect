@@ -79,8 +79,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // 2. Check Agent
           const agent = agentResult.data as any;
           if (agent) {
-            if (agent.is_approved === false) return 'user';
-            console.log("[AuthContext] Found in 'agents' table. Role: agent");
+            // FIX: Return 'agent' even if not approved, so they get redirected to Agent Layout/Pending Screen
+            // if (agent.is_approved === false) return 'user'; 
+            console.log("[AuthContext] Found in 'agents' table. Role: agent" + (agent.is_approved ? "" : " (Pending)"));
             return 'agent';
           }
 
