@@ -170,6 +170,18 @@ export default function AdminUsers() {
     } else {
       // 3. Update profile role to 'agent' just in case
       await supabase.from('profiles' as any).update({ role: 'agent' }).eq('id', userId);
+
+      // Trigger Notification
+      const { data: profile } = await supabase.from('profiles').select('email, full_name').eq('id', userId).single();
+      if (profile) {
+        supabase.functions.invoke('notification-service', {
+          body: {
+            type: 'agent_approved',
+            record: { email: profile.email, fullName: profile.full_name }
+          }
+        });
+      }
+
       toast({ title: "Agent Approved ✅", description: "User is now an active agent." });
     }
 

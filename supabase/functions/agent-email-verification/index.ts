@@ -228,6 +228,39 @@ const handler = async (req: Request): Promise<Response> => {
             // 3. Cleanup: Delete the code
             await supabaseClient.from("verification_codes").delete().eq("id", verification.id);
 
+            // 4. Send Welcome Email
+            if (resend) {
+                const emailSubject = "Welcome to WingWay Connect!";
+                const emailHtml = `
+                    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+                        <h2 style="color: #1e293b; margin-bottom: 16px;">Welcome, ${storedName || "User"}!</h2>
+                        <p style="color: #475569; font-size: 16px; line-height: 24px;">
+                            Your account has been successfully created. 
+                            ${(storedRole || role) === 'agent' ? 'Your agent account is currently <strong>pending approval</strong>. You will be notified once an admin reviews your application.' : 'You can now log in and start booking shipments.'}
+                        </p>
+                        <div style="text-align: center; margin: 32px 0;">
+                            <a href="https://wcargo2024.com/login" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Go to Login</a>
+                        </div>
+                        <p style="color: #64748b; font-size: 14px; line-height: 21px;">If you have any questions, feel free to reply to this email.</p>
+                        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
+                        <p style="color: #94a3b8; font-size: 12px; text-align: center;">&copy; 2026 WingWay Connect. All rights reserved.</p>
+                    </div>
+                `;
+
+                try {
+                    await resend.emails.send({
+                        from: "WingWay <code@wcargo2024.com>",
+                        to: [email],
+                        subject: emailSubject,
+                        html: emailHtml,
+                    });
+                    console.log("[DEBUG] Welcome email sent.");
+                } catch (emailErr) {
+                    console.error("[DEBUG] Failed to send welcome email:", emailErr);
+                    // Non-blocking error
+                }
+            }
+
             return new Response(
                 JSON.stringify({ success: true, message: "Account verified and created successfully.", userId: newUser.user?.id }),
                 { headers: { ...corsHeaders, "Content-Type": "application/json" } }

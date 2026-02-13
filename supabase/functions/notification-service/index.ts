@@ -121,6 +121,39 @@ const emailHandler = async (payload: NotificationPayload, adminEmails: string[])
     });
   }
 
+  if (type === 'agent_approved') {
+    const { email, fullName } = record;
+    emailsToSend.push({
+      to: email,
+      subject: "Agent Application Approved - Wing Way Connect",
+      html: `
+        <html>
+          <head><style>${styles}</style></head>
+          <body>
+            <div class="container">
+              <div class="header" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);">
+                <h1>Application Approved</h1>
+              </div>
+              <div class="content">
+                <h2>Welcome to the Team, ${fullName}!</h2>
+                <p>We are pleased to inform you that your application to become a Wing Way Connect agent has been approved.</p>
+                <div class="info-card">
+                  <div class="info-item"><span class="info-label">Account Status</span><span class="status-badge" style="background-color: #dcfce7; color: #166534;">Active</span></div>
+                  <div class="info-item"><span class="info-label">Role</span><span class="info-value">Agent</span></div>
+                </div>
+                <p>You now have access to the agent dashboard where you can manage shipments and track deliveries.</p>
+                <a href="https://wcargo2024.com/agent-login" class="button" style="background-color: #16a34a;">Login to Agent Dashboard</a>
+              </div>
+              <div class="footer">
+                <p>© 2026 Wing Way Connect. All rights reserved.</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `
+    });
+  }
+
   if (type === 'shipment_update' || type === 'shipment_created') {
     const shipment = record;
     const userEmail = shipment.sender_email || shipment.receiver_email;
