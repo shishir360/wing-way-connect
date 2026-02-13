@@ -139,7 +139,7 @@ const handler = async (req: Request): Promise<Response> => {
             if (resend) {
                 console.log("[DEBUG] Sending email via Resend...");
                 const { data: emailData, error: emailError } = await resend.emails.send({
-                    from: "WingWay <onboarding@resend.dev>", // Replace with your verified domain
+                    from: "WingWay <code@wcargo2024.com>", // Updated domain
                     to: [email],
                     subject: "Your Verification Code - WingWay Connect",
                     html: `
