@@ -27,13 +27,48 @@ export default function AdminOverview() {
   // Fetch Agent Activity (Scans)
   useEffect(() => {
     const fetchActivity = async () => {
-      const { data } = await supabase
+      // 1. Fetch raw scans with shipment details
+      const { data: scans, error } = await supabase
         .from('shipment_scans')
-        .select('*, scanned_by(full_name, avatar_url), shipments(tracking_id)')
+        .select(`
+          *,
+          shipments (
+            tracking_id
+          )
+        `)
         .order('scanned_at', { ascending: false })
         .limit(10);
-      setAgentActivity(data || []);
+
+      if (error) {
+        console.error("Error fetching scans:", error);
+        return;
+      }
+
+      if (!scans || scans.length === 0) {
+        setAgentActivity([]);
+        return;
+      }
+
+      // 2. Extract unique user IDs for manual join
+      const userIds = Array.from(new Set(scans.map(s => s.scanned_by).filter(Boolean)));
+
+      // 3. Fetch profiles for those users
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .in('id', userIds);
+
+      // 4. Merge data
+      const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+
+      const combined = scans.map(scan => ({
+        ...scan,
+        scanned_by: profileMap.get(scan.scanned_by) || { full_name: 'Unknown Agent', avatar_url: null }
+      }));
+
+      setAgentActivity(combined);
     };
+
     fetchActivity();
 
     // Real-time subscription for scans
