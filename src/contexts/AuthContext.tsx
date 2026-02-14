@@ -49,13 +49,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return 'admin';
       }
 
-      const timeout = new Promise<string>((resolve) =>
-        setTimeout(() => {
-          console.warn("[AuthContext] Role fetch timed out! Defaulting to 'user'.");
-          resolve('user');
-        }, 3000) // 3 seconds STRICT timeout
-      );
-
       const roleCheck = async (): Promise<string> => {
         try {
           // Run checks in parallel for speed
@@ -79,8 +72,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // 2. Check Agent
           const agent = agentResult.data as any;
           if (agent) {
-            // FIX: Return 'agent' even if not approved, so they get redirected to Agent Layout/Pending Screen
-            // if (agent.is_approved === false) return 'user'; 
             console.log("[AuthContext] Found in 'agents' table. Role: agent" + (agent.is_approved ? "" : " (Pending)"));
             return 'agent';
           }
@@ -99,11 +90,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         } catch (err) {
           console.error("[AuthContext] Error fetching role:", err);
-          return 'user';
+          return null; // SAFE: Do not default to 'user' on error
         }
       };
-
-      return Promise.race([roleCheck(), timeout]);
+      return roleCheck();
     };
 
     const runAuthLogic = async () => {

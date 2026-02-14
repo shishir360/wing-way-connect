@@ -31,11 +31,16 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
         return <Navigate to="/auth" state={{ from: location }} replace />;
     }
 
-    if (allowedRoles && role && !allowedRoles.includes(role)) {
-        // Redirect to authorized area based on role, or home
+    // STRICT: If role is not yet loaded or not found, do not let them pass
+    // (AuthContext handles loading=true, but if loading=false and role=null, we need to handle it)
+    if (allowedRoles && (!role || !allowedRoles.includes(role))) {
+        // Redirect logic to authorized area based on role
         if (role === 'admin') return <Navigate to="/admin" replace />;
         if (role === 'agent') return <Navigate to="/agent" replace />;
-        return <Navigate to="/dashboard" replace />;
+        if (role === 'user') return <Navigate to="/dashboard" replace />;
+
+        // Fallback: If role is null/unknown, force re-login (Safe Default)
+        return <Navigate to="/auth" replace />;
     }
 
     return <>{children}</>;
