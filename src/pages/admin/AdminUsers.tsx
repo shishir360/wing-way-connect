@@ -35,7 +35,7 @@ const statusOptions = [
   { value: "pickup", label: "Pickup Agent (Mark as Picked Up)" },
   { value: "in_transit", label: "Transit Agent (Mark as In Transit)" },
   { value: "customs", label: "Customs Agent (Mark as Customs Cleared)" },
-  { value: "out_for_delivery", label: "Delivery Agent (Mark as Out for Delivery)" }
+  { value: "out_for_delivery", label: "Delivery Agent (Out for Delivery & Delivered)" }
 ];
 
 export default function AdminUsers() {
