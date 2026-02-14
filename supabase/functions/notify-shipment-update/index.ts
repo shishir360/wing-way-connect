@@ -91,24 +91,70 @@ const handler = async (req: Request): Promise<Response> => {
             });
         }
 
-        // C. Notify Agent (Confirmation) - Optional, maybe skip to reduce spam
-        // But user asked for "current agent". 
-        // If 'scannedBy' is the agent, maybe they don't need email? 
-        // But "assigned_agent" might be different?
-        // Let's email the *Assigned* Agent if exists.
-        if (shipment.assigned_agent) {
-            const { data: assignedProfile } = await supabase.from("profiles").select("email").eq("id", shipment.assigned_agent).single();
-            if (assignedProfile?.email) {
+        // C. Notify Agent (Confirmation) - The one who performed the action
+        if (scannedBy) {
+            const { data: actorProfile } = await supabase.from("profiles").select("email, full_name").eq("id", scannedBy).single();
+            if (actorProfile?.email) {
                 emailsToSend.push({
                     from: `WACC System <${SENDER_EMAIL}>`,
-                    to: [assignedProfile.email],
-                    subject: `Shipment Update: ${trackingId}`,
+                    to: [actorProfile.email],
+                    subject: `Action Confirmed: ${trackingId} Updated`,
                     html: `
-            <p>Shipment <strong>${trackingId}</strong> assigned to you was updated by ${agentName}.</p>
-            <p><strong>New Status:</strong> ${statusHuman}</p>
+            <p>Hello ${actorProfile.full_name || 'Agent'},</p>
+            <p>You successfully updated shipment <strong>${trackingId}</strong> to <strong>${statusHuman}</strong>.</p>
             <p><strong>Location:</strong> ${location || "N/A"}</p>
+            <p>Thank you for your hard work.</p>
           `,
                 });
+            }
+        }
+
+        // D. Notify Next Agents (Handoff)
+        // Logic: Status X -> Notify Agents with Role Y
+        const nextRoleMap: Record<string, string> = {
+            'picked_up': 'in_transit',       // Valid next step: In Transit
+            'in_transit': 'customs',         // Valid next step: Customs
+            'customs': 'out_for_delivery',   // Valid next step: Out for Delivery
+            'out_for_delivery': 'delivery',  // Valid next step: Delivery
+            // 'delivered': null             // End of chain
+        };
+
+        const nextRole = nextRoleMap[status];
+
+        if (nextRole) {
+            // Find agents with this role
+            const { data: nextAgents } = await supabase
+                .from('user_roles')
+                .select('user_id')
+                .eq('designated_status', nextRole)
+                .eq('role', 'agent');
+
+            if (nextAgents && nextAgents.length > 0) {
+                const nextAgentIds = nextAgents.map(a => a.user_id);
+                const { data: nextProfiles } = await supabase
+                    .from('profiles')
+                    .select('email, full_name')
+                    .in('id', nextAgentIds);
+
+                if (nextProfiles) {
+                    nextProfiles.forEach(profile => {
+                        if (profile.email) {
+                            emailsToSend.push({
+                                from: `WACC Logistics <${SENDER_EMAIL}>`,
+                                to: [profile.email],
+                                subject: `New Task: Shipment ${trackingId} Ready`,
+                                html: `
+                  <p>Hello ${profile.full_name || 'Agent'},</p>
+                  <p>A shipment is ready for your action.</p>
+                  <p><strong>Tracking ID:</strong> ${trackingId}</p>
+                  <p><strong>Current Status:</strong> ${statusHuman}</p>
+                  <p><strong>Location:</strong> ${location || "N/A"}</p>
+                  <p>Please proceed with the next step (${nextRole.replace(/_/g, ' ').toUpperCase()}).</p>
+                `,
+                            });
+                        }
+                    });
+                }
             }
         }
 
