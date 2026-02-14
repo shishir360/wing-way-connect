@@ -161,7 +161,7 @@ export default function AgentScan() {
         'picked_up': ['in_transit'],
         'in_transit': ['customs', 'in_transit'], // Allow multiple transit scans
         'customs': ['out_for_delivery', 'customs'], // Allow multiple customs scans
-        'out_for_delivery': ['delivery', 'out_for_delivery'],
+        'out_for_delivery': ['delivered', 'out_for_delivery'],
         'delivered': [] // No moves after delivery
       };
 
