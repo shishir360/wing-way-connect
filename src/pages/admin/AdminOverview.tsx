@@ -410,7 +410,10 @@ export default function AdminOverview() {
                           {activity.scan_type === 'delivery' ? 'delivered' :
                             activity.scan_type === 'pickup' ? 'picked up' :
                               activity.scan_type === 'out_for_delivery' ? 'is out for delivery' :
-                                'scanned'}
+                                activity.scan_type === 'customs' ? 'cleared customs for' :
+                                  activity.scan_type === 'in_transit' ? 'is moving' :
+                                    activity.scan_type === 'handover' ? 'handled' :
+                                      'scanned'}
                         </span>
                         <span className="font-mono text-xs font-medium text-primary bg-primary/10 px-1 py-0.5 rounded">{activity.shipments?.tracking_id}</span>
                       </p>

@@ -96,7 +96,7 @@ const handler = async (req: Request): Promise<Response> => {
         // If 'scannedBy' is the agent, maybe they don't need email? 
         // But "assigned_agent" might be different?
         // Let's email the *Assigned* Agent if exists.
-        if (shipment.assigned_agent && shipment.assigned_agent !== scannedBy) {
+        if (shipment.assigned_agent) {
             const { data: assignedProfile } = await supabase.from("profiles").select("email").eq("id", shipment.assigned_agent).single();
             if (assignedProfile?.email) {
                 emailsToSend.push({

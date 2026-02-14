@@ -154,7 +154,56 @@ export default function AgentScan() {
         delivery: "Delivered"
       };
 
-      // 1. DUPLICATE CHECK
+      // 1. STRICT WORKFLOW VALIDATION
+      const currentStatus = shipmentInfo.status || 'pending';
+      const allowedFlow: Record<string, string[]> = {
+        'pending': ['pickup'],
+        'picked_up': ['in_transit'],
+        'in_transit': ['customs', 'in_transit'], // Allow multiple transit scans
+        'customs': ['out_for_delivery', 'customs'], // Allow multiple customs scans
+        'out_for_delivery': ['delivery', 'out_for_delivery'],
+        'delivered': [] // No moves after delivery
+      };
+
+      // Map scanType to the resulting status to check flow
+      const statusMap: Record<string, string> = {
+        pickup: 'picked_up',
+        in_transit: 'in_transit',
+        customs: 'customs',
+        out_for_delivery: 'out_for_delivery',
+        delivery: 'delivered'
+      };
+
+      const proposedStatus = statusMap[scanType];
+
+      // Special case: If role is "out_for_delivery" they can do "delivery" too, 
+      // so if current is "out_for_delivery", allow "delivery".
+
+      const allowedNext = allowedFlow[currentStatus] || [];
+      const isAllowed = allowedNext.includes(proposedStatus) ||
+        (currentStatus === 'in_transit' && proposedStatus === 'in_transit') || // Re-scan transit
+        (currentStatus === 'customs' && proposedStatus === 'customs'); // Re-scan customs
+
+      if (!isAllowed) {
+        // Friendly error message
+        let expectedMsg = "";
+        if (currentStatus === 'pending') expectedMsg = "Shipment must be Picked Up first.";
+        else if (currentStatus === 'picked_up') expectedMsg = "Shipment must be In Transit next.";
+        else if (currentStatus === 'in_transit') expectedMsg = "Shipment is In Transit. Next: Customs.";
+        else if (currentStatus === 'customs') expectedMsg = "Shipment is in Customs. Next: Out for Delivery.";
+        else if (currentStatus === 'out_for_delivery') expectedMsg = "Shipment is Out for Delivery. Next: Delivered.";
+        else if (currentStatus === 'delivered') expectedMsg = "Shipment is already Delivered.";
+
+        toast({
+          title: "Invalid Status Sequence 🚫",
+          description: `Cannot go from ${currentStatus.replace('_', ' ').toUpperCase()} to ${scanTypeLabels[scanType].toUpperCase()}. ${expectedMsg}`,
+          variant: "destructive"
+        });
+        setSubmitting(false);
+        return;
+      }
+
+      // 2. DUPLICATE CHECK
       const { data: existingScan } = await supabase
         .from('shipment_scans')
         .select('id')
@@ -162,7 +211,7 @@ export default function AgentScan() {
         .eq('scan_type', scanType)
         .maybeSingle();
 
-      if (existingScan) {
+      if (existingScan && scanType !== 'in_transit' && scanType !== 'customs') { // Allow multiple transit/customs updates
         toast({
           title: "Duplicate Scan ⚠️",
           description: `This shipment is already marked as ${scanTypeLabels[scanType]?.toUpperCase() || scanType}.`,
@@ -173,22 +222,11 @@ export default function AgentScan() {
         return;
       }
 
-      // 2. UPDATE MAIN SHIPMENT STATUS
-      // Status Mapping
-      const statusMap: Record<string, string> = {
-        pickup: 'picked_up',
-        handover: 'in_transit',
-        in_transit: 'in_transit',
-        customs: 'customs',
-        checkpoint: 'customs',
-        out_for_delivery: 'out_for_delivery',
-        delivery: 'delivered'
-      };
-
-      const newStatus = statusMap[scanType] || 'in_transit';
+      // 3. UPDATE MAIN SHIPMENT STATUS
+      const newStatus = proposedStatus || 'in_transit';
       const updatePayload: any = {
         status: newStatus,
-        assigned_agent: user.id // Set current agent as the holder
+        assigned_agent: user.id
       };
 
       if (scanType === 'delivery') {
@@ -378,7 +416,7 @@ export default function AgentScan() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Scan Action</Label>
-              {designatedStatus && designatedStatus !== 'out_for_delivery' && designatedStatus !== 'checkpoint' && designatedStatus !== 'customs' ? (
+              {designatedStatus && designatedStatus !== 'out_for_delivery' && designatedStatus !== 'customs' && designatedStatus !== 'in_transit' && designatedStatus !== 'pickup' ? (
                 <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl flex items-center justify-between">
                   <span className="font-medium text-foreground">{scanTypeLabels[designatedStatus]}</span>
                   <Badge className="bg-primary text-primary-foreground">Auto-Selected</Badge>
@@ -397,11 +435,9 @@ export default function AgentScan() {
                     ) : (
                       [
                         <SelectItem key="pickup" value="pickup">Pickup</SelectItem>,
-                        <SelectItem key="handover" value="handover">Handover (Hub)</SelectItem>,
                         <SelectItem key="transit" value="in_transit">In Transit</SelectItem>,
                         <SelectItem key="customs" value="customs">Customs Clearance</SelectItem>,
                         <SelectItem key="out" value="out_for_delivery">Out for Delivery</SelectItem>,
-                        <SelectItem key="check" value="checkpoint">Customs Cleared (Checkpoint)</SelectItem>,
                         <SelectItem key="del" value="delivery">Delivery (Completed)</SelectItem>
                       ]
                     )}

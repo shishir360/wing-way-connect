@@ -33,12 +33,9 @@ interface AgentRequest {
 
 const statusOptions = [
   { value: "pickup", label: "Pickup Agent (Mark as Picked Up)" },
-  { value: "handover", label: "Hub Agent (Mark as Handed Over)" },
   { value: "in_transit", label: "Transit Agent (Mark as In Transit)" },
   { value: "customs", label: "Customs Agent (Mark as Customs Cleared)" },
-  { value: "checkpoint", label: "Checkpoint Agent (Checkpoint Scan)" },
-  { value: "out_for_delivery", label: "Delivery Driver (Mark as Out for Delivery)" },
-  { value: "delivery", label: "Delivery Agent (Mark as Delivered)" }
+  { value: "out_for_delivery", label: "Delivery Agent (Mark as Out for Delivery)" }
 ];
 
 export default function AdminUsers() {
