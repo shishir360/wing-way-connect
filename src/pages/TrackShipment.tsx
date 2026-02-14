@@ -22,12 +22,12 @@ interface TrackingEvent {
 }
 
 const shipmentStatuses = [
-  "pending", "pickup_scheduled", "picked_up", "in_transit",
+  "pending", "picked_up", "in_transit",
   "customs", "out_for_delivery", "delivered"
 ];
 
 const statusLabels: Record<string, string> = {
-  pending: "Pending", pickup_scheduled: "Pickup Scheduled", picked_up: "Picked Up",
+  pending: "Pending", picked_up: "Picked Up",
   in_transit: "In Transit", customs: "At Customs", out_for_delivery: "Out for Delivery",
   delivered: "Delivered", cancelled: "Cancelled",
 };
@@ -465,10 +465,16 @@ function CargoTrackingResult({ data }: { data: CargoTracking }) {
               <div className="flex flex-col items-center">
                 <div className={cn(
                   "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
-                  event.completed ? "bg-success text-white" : event.current ? "bg-primary text-white" : "bg-muted text-muted-foreground"
+                  event.completed
+                    ? (event.current && event.status !== 'delivered' ? "bg-primary text-white" : "bg-success text-white")
+                    : "bg-muted text-muted-foreground"
                 )}>
                   {event.completed ? (
-                    <CheckCircle className="h-5 w-5" />
+                    event.current && event.status !== 'delivered' ? (
+                      <Clock className="h-5 w-5" />
+                    ) : (
+                      <CheckCircle className="h-5 w-5" />
+                    )
                   ) : (
                     <Clock className="h-5 w-5" />
                   )}
