@@ -378,7 +378,7 @@ export default function AgentScan() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Scan Action</Label>
-              {designatedStatus && designatedStatus !== 'out_for_delivery' && designatedStatus !== 'checkpoint' ? (
+              {designatedStatus && designatedStatus !== 'out_for_delivery' && designatedStatus !== 'checkpoint' && designatedStatus !== 'customs' ? (
                 <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl flex items-center justify-between">
                   <span className="font-medium text-foreground">{scanTypeLabels[designatedStatus]}</span>
                   <Badge className="bg-primary text-primary-foreground">Auto-Selected</Badge>
