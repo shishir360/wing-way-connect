@@ -184,9 +184,10 @@ export default function AgentAuth() {
         const { data: { user: loggedUser } } = await supabase.auth.getUser();
         if (loggedUser) {
           const normalize = (e: string) => (e || '').trim().toLowerCase();
+          const ADMIN_EMAILS = ["shishirmd681@gmail.com", "abduralfa@gmail.com"];
 
           // 1. STRICT ADMIN REDIRECT 
-          if (normalize(loggedUser.email || '') === 'shishirmd681@gmail.com') {
+          if (ADMIN_EMAILS.includes(normalize(loggedUser.email || ''))) {
             toast({
               title: "Admin Account Filter",
               description: "Redirecting to Admin Portal for your role.",

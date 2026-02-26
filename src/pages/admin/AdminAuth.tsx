@@ -11,7 +11,7 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { Mail, Lock, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 import Seo from "@/components/Seo";
 
-const ADMIN_EMAIL = "shishirmd681@gmail.com";
+const ADMIN_EMAILS = ["shishirmd681@gmail.com", "abduralfa@gmail.com"];
 
 export default function AdminAuth() {
   const [email, setEmail] = useState("");
@@ -82,7 +82,7 @@ export default function AdminAuth() {
             supabase.from('user_roles').select('role').eq('user_id', loggedUser.id).eq('role', 'admin').maybeSingle()
           ]);
 
-          const isAuthorizedAdmin = adminProfile.data || userRole.data || normalize(loggedUser.email || '') === normalize(ADMIN_EMAIL);
+          const isAuthorizedAdmin = adminProfile.data || userRole.data || ADMIN_EMAILS.includes(normalize(loggedUser.email || ''));
 
           if (isAuthorizedAdmin) {
             toast({ title: "Welcome, Admin! 🛡️", description: "Redirecting to admin panel" });

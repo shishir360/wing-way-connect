@@ -43,8 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 0. SUPER ADMIN BYPASS
       // If email matches the system admin, force admin role immediately
       // This protects against DB inconsistencies or missing records
-      const ADMIN_EMAIL = "shishirmd681@gmail.com";
-      if (userEmail && userEmail.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+      const ADMIN_EMAILS = ["shishirmd681@gmail.com", "abduralfa@gmail.com"];
+      if (userEmail && ADMIN_EMAILS.includes(userEmail.trim().toLowerCase())) {
         console.warn("[AuthContext] Super Admin detected via email. Bypassing DB check.");
         return 'admin';
       }

@@ -28,7 +28,7 @@ const adminNav = [
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
-const ADMIN_EMAIL = "shishirmd681@gmail.com";
+const ADMIN_EMAILS = ["shishirmd681@gmail.com", "abduralfa@gmail.com"];
 
 export default function AdminLayout() {
   const navigate = useNavigate();
@@ -80,7 +80,7 @@ export default function AdminLayout() {
 
   // Handle Access Control Rendering
   if (!authLoading && !adminLoading && user) {
-    const emailMatch = (user.email || '').trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    const emailMatch = ADMIN_EMAILS.includes((user.email || '').trim().toLowerCase());
 
     // IF EMAIL MISMATCH OR NOT ADMIN -> SHOW DEBUG SCREEN
     if (!emailMatch || !isAdmin) {
@@ -101,7 +101,7 @@ export default function AdminLayout() {
 
                 <div className="border-b pb-2">
                   <p className="text-muted-foreground">Requirements:</p>
-                  <p><span className="font-bold">Target Email:</span> {ADMIN_EMAIL}</p>
+                  <p><span className="font-bold">Target Emails:</span> {ADMIN_EMAILS.join(', ')}</p>
                   <p><span className="font-bold">Email Match:</span> {emailMatch ? '✅ YES' : '❌ NO'}</p>
                 </div>
 
