@@ -27,15 +27,10 @@ export default function AdminAuth() {
     // Clear potentially stale role cache on mount
     localStorage.removeItem('user_role');
 
-    const checkAndClearSession = async () => {
-      // Logic: If on Admin Login page, and logged in user is NOT an admin, logging them out is safer
-      // to allow them to login as admin.
-      if (user && !adminLoading && !isAdmin) {
-        console.log("User logged in but not admin on Admin Login page. Signing out...");
-        await supabase.auth.signOut();
-      }
-    };
-    checkAndClearSession();
+    // Remove the aggressive signout logic here, as it may race with useAuth 
+    // determining the actual user. If they aren't admin, the `AdminLayout` 
+    // itself will render the Debug Denied screen instead of kicking them out, 
+    // allowing them to voluntarily logout.
 
     if (user && !adminLoading && isAdmin) {
       navigate("/admin");

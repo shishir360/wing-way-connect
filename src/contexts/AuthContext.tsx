@@ -199,10 +199,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     setLoading(true);
-    await supabase.auth.signOut();
-    setRole(null);
-    localStorage.removeItem('user_role');
-    setLoading(false);
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error("[AuthContext] Error during server signout:", err);
+    } finally {
+      // FORCE CLEAR LOCAL STATE EVEN IF SERVER FAILS
+      setRole(null);
+      setSession(null);
+      setUser(null);
+      localStorage.removeItem('user_role');
+      // Adding a hard reload to completely reinitialize all states after logout
+      // to avoid zombie states, since auth is very tricky and often caching causes glitches.
+      window.location.href = "/";
+    }
   };
 
   return (
